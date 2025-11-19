@@ -1,20 +1,40 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { IceCreamCone } from "lucide-react";
+import { IceCreamCone, Loader2 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { signIn, user } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (user) {
+      navigate("/");
+    }
+  }, [user, navigate]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implementar autenticação
-    navigate("/");
+    setIsLoading(true);
+
+    try {
+      await signIn(email, password);
+      toast.success("Login realizado com sucesso!");
+      navigate("/");
+    } catch (error: any) {
+      console.error("Erro no login:", error);
+      toast.error(error.message || "Erro ao fazer login");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -61,7 +81,12 @@ export default function Login() {
                 className="h-12"
               />
             </div>
-            <Button type="submit" className="w-full h-12 text-base font-semibold shadow-md">
+            <Button 
+              type="submit" 
+              className="w-full h-12 text-base font-semibold shadow-md"
+              disabled={isLoading}
+            >
+              {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Entrar
             </Button>
           </form>
