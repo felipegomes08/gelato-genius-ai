@@ -41,16 +41,27 @@ export function EditPermissionsDialog({ employee, open, onOpenChange }: EditPerm
   const queryClient = useQueryClient();
 
   useEffect(() => {
+    const defaultPermissions = {
+      can_access_sales: false,
+      can_access_products: false,
+      can_access_stock: false,
+      can_access_financial: false,
+      can_access_reports: false,
+      can_access_settings: false,
+    };
+
     if (employee.user_permissions?.[0]) {
       const currentPermissions = employee.user_permissions[0];
       setPermissionStates({
-        can_access_sales: currentPermissions.can_access_sales,
-        can_access_products: currentPermissions.can_access_products,
-        can_access_stock: currentPermissions.can_access_stock,
-        can_access_financial: currentPermissions.can_access_financial,
-        can_access_reports: currentPermissions.can_access_reports,
-        can_access_settings: currentPermissions.can_access_settings,
+        can_access_sales: currentPermissions.can_access_sales ?? false,
+        can_access_products: currentPermissions.can_access_products ?? false,
+        can_access_stock: currentPermissions.can_access_stock ?? false,
+        can_access_financial: currentPermissions.can_access_financial ?? false,
+        can_access_reports: currentPermissions.can_access_reports ?? false,
+        can_access_settings: currentPermissions.can_access_settings ?? false,
       });
+    } else {
+      setPermissionStates(defaultPermissions);
     }
   }, [employee]);
 
@@ -58,8 +69,17 @@ export function EditPermissionsDialog({ employee, open, onOpenChange }: EditPerm
     mutationFn: async () => {
       const { error } = await supabase
         .from("user_permissions")
-        .update(permissionStates)
-        .eq("user_id", employee.id);
+        .upsert({
+          user_id: employee.id,
+          can_access_sales: permissionStates.can_access_sales || false,
+          can_access_products: permissionStates.can_access_products || false,
+          can_access_stock: permissionStates.can_access_stock || false,
+          can_access_financial: permissionStates.can_access_financial || false,
+          can_access_reports: permissionStates.can_access_reports || false,
+          can_access_settings: permissionStates.can_access_settings || false,
+        }, {
+          onConflict: 'user_id'
+        });
 
       if (error) throw error;
     },
