@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, TrendingUp, TrendingDown, Calendar, Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { AddTransactionDialog } from "@/components/financial/AddTransactionDialog";
 
 interface Transaction {
   id: string;
@@ -19,6 +20,7 @@ interface Transaction {
 
 export default function Financeiro() {
   const [period] = useState("Hoje");
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
 
   const { data: transactions = [], isLoading } = useQuery({
     queryKey: ["financial_transactions"],
@@ -66,9 +68,9 @@ export default function Financeiro() {
             <Calendar className="h-4 w-4 mr-2" />
             {period}
           </Button>
-          <Button size="sm" className="shadow-sm">
+          <Button size="sm" className="shadow-sm" onClick={() => setAddDialogOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
-            Nova Saída
+            Nova Transação
           </Button>
         </div>
 
@@ -182,6 +184,11 @@ export default function Financeiro() {
       </main>
 
       <BottomNav />
+
+      <AddTransactionDialog 
+        open={addDialogOpen} 
+        onOpenChange={setAddDialogOpen}
+      />
     </div>
   );
 }
