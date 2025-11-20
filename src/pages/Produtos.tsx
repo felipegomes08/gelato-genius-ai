@@ -5,70 +5,49 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, Edit, Package } from "lucide-react";
+import { Search, Plus, Edit, Package, Loader2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Product {
   id: string;
   name: string;
   price: number;
-  stock?: number;
-  controlsStock: boolean;
+  current_stock: number | null;
+  controls_stock: boolean;
   category: string;
+  description: string | null;
+  image_url: string | null;
+  is_active: boolean;
+  low_stock_threshold: number | null;
 }
-
-const mockProducts: Product[] = [
-  {
-    id: "1",
-    name: "Casquinha Pequena",
-    price: 6.0,
-    stock: 45,
-    controlsStock: true,
-    category: "Casquinhas",
-  },
-  {
-    id: "2",
-    name: "Casquinha Média",
-    price: 8.0,
-    stock: 12,
-    controlsStock: true,
-    category: "Casquinhas",
-  },
-  {
-    id: "3",
-    name: "Casquinha Grande",
-    price: 10.0,
-    stock: 28,
-    controlsStock: true,
-    category: "Casquinhas",
-  },
-  {
-    id: "4",
-    name: "Milkshake Chocolate",
-    price: 15.0,
-    stock: 8,
-    controlsStock: true,
-    category: "Bebidas",
-  },
-  {
-    id: "5",
-    name: "Sundae Morango",
-    price: 15.0,
-    controlsStock: false,
-    category: "Sobremesas",
-  },
-];
 
 export default function Produtos() {
   const [searchTerm, setSearchTerm] = useState("");
 
-  const filteredProducts = mockProducts.filter((p) =>
+  const { data: products = [], isLoading } = useQuery({
+    queryKey: ["products"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .eq("is_active", true)
+        .order("name");
+
+      if (error) throw error;
+      return data as Product[];
+    },
+  });
+
+  const filteredProducts = products.filter((p) =>
     p.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const getStockStatus = (product: Product) => {
-    if (!product.controlsStock) return null;
-    if (!product.stock) return "out";
-    if (product.stock < 15) return "low";
+    if (!product.controls_stock) return null;
+    if (!product.current_stock || product.current_stock === 0) return "out";
+    const threshold = product.low_stock_threshold || 15;
+    if (product.current_stock < threshold) return "low";
     return "ok";
   };
 
@@ -94,8 +73,17 @@ export default function Produtos() {
         </div>
 
         {/* Products List */}
-        <div className="space-y-3">
-          {filteredProducts.map((product) => {
+        {isLoading ? (
+          <div className="flex justify-center items-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : filteredProducts.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">
+            {searchTerm ? "Nenhum produto encontrado" : "Nenhum produto cadastrado"}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {filteredProducts.map((product) => {
             const stockStatus = getStockStatus(product);
             return (
               <Card key={product.id} className="shadow-sm hover:shadow-md transition-shadow">
@@ -117,12 +105,12 @@ export default function Produtos() {
                     </div>
                   </div>
 
-                  {product.controlsStock && (
+                  {product.controls_stock && (
                     <div className="flex items-center justify-between pt-3 border-t">
                       <div className="flex items-center gap-2">
                         <Package className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm">
-                          Estoque: {product.stock} un.
+                          Estoque: {product.current_stock || 0} un.
                         </span>
                       </div>
                       {stockStatus === "low" && (
@@ -146,7 +134,7 @@ export default function Produtos() {
                     </div>
                   )}
 
-                  {!product.controlsStock && (
+                  {!product.controls_stock && (
                     <div className="flex items-center gap-2 pt-3 border-t">
                       <Package className="h-4 w-4 text-muted-foreground" />
                       <span className="text-sm text-muted-foreground">
@@ -158,7 +146,8 @@ export default function Produtos() {
               </Card>
             );
           })}
-        </div>
+          </div>
+        )}
       </main>
 
       <BottomNav />
