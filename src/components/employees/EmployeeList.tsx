@@ -98,17 +98,23 @@ export function EmployeeList({ employees, isLoading }: EmployeeListProps) {
         .update({ is_active: !selectedEmployee.is_active })
         .eq("id", selectedEmployee.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error updating employee status:", error);
+        throw error;
+      }
 
       toast.success(
         selectedEmployee.is_active
           ? "Funcionário desativado com sucesso!"
           : "Funcionário reativado com sucesso!"
       );
-      await queryClient.invalidateQueries({ queryKey: ["employees"] });
-      await queryClient.refetchQueries({ queryKey: ["employees"] });
+      
       setIsDeactivateDialogOpen(false);
+      setSelectedEmployee(null);
+      
+      await queryClient.invalidateQueries({ queryKey: ["employees"] });
     } catch (error: any) {
+      console.error("Full error:", error);
       toast.error(error.message || "Erro ao atualizar status do funcionário");
     }
   };
