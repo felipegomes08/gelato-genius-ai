@@ -65,9 +65,10 @@ export function AddEmployeeDialog({ open, onOpenChange }: AddEmployeeDialogProps
 
       return authData.user;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success("Funcionário cadastrado com sucesso!");
-      queryClient.invalidateQueries({ queryKey: ["employees"] });
+      await queryClient.invalidateQueries({ queryKey: ["employees"] });
+      await queryClient.refetchQueries({ queryKey: ["employees"] });
       onOpenChange(false);
       setFullName("");
       setEmail("");
