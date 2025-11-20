@@ -6,7 +6,6 @@ import { useState } from "react";
 import { Plus } from "lucide-react";
 import { EmployeeList } from "@/components/employees/EmployeeList";
 import { AddEmployeeDialog } from "@/components/employees/AddEmployeeDialog";
-import { CreateMasterButton } from "@/components/employees/CreateMasterButton";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -57,17 +56,14 @@ export default function Funcionarios() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0">
             <CardTitle>Gerenciar Funcionários</CardTitle>
-            <div className="flex gap-2">
-              <CreateMasterButton />
-              <Button 
-                size="sm" 
-                onClick={() => setIsAddDialogOpen(true)}
-                className="h-9"
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                Adicionar
-              </Button>
-            </div>
+            <Button 
+              size="sm" 
+              onClick={() => setIsAddDialogOpen(true)}
+              className="h-9"
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Adicionar
+            </Button>
           </CardHeader>
           <CardContent>
             <EmployeeList employees={employees} isLoading={isLoading} />
