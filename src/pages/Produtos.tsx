@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Search, Plus, Edit, Package, Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { AddProductDialog } from "@/components/products/AddProductDialog";
 
 interface Product {
   id: string;
@@ -24,6 +25,7 @@ interface Product {
 
 export default function Produtos() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
 
   const { data: products = [], isLoading } = useQuery({
     queryKey: ["products"],
@@ -67,7 +69,11 @@ export default function Produtos() {
               className="pl-10 h-12"
             />
           </div>
-          <Button size="icon" className="h-12 w-12 shadow-md">
+          <Button 
+            size="icon" 
+            className="h-12 w-12 shadow-md"
+            onClick={() => setAddDialogOpen(true)}
+          >
             <Plus className="h-5 w-5" />
           </Button>
         </div>
@@ -150,6 +156,7 @@ export default function Produtos() {
         )}
       </main>
 
+      <AddProductDialog open={addDialogOpen} onOpenChange={setAddDialogOpen} />
       <BottomNav />
     </div>
   );
