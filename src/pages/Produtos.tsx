@@ -9,6 +9,7 @@ import { Search, Plus, Edit, Package, Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AddProductDialog } from "@/components/products/AddProductDialog";
+import { EditProductDialog } from "@/components/products/EditProductDialog";
 
 interface Product {
   id: string;
@@ -26,6 +27,8 @@ interface Product {
 export default function Produtos() {
   const [searchTerm, setSearchTerm] = useState("");
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   const { data: products = [], isLoading } = useQuery({
     queryKey: ["products"],
@@ -105,7 +108,15 @@ export default function Produtos() {
                       <span className="text-lg font-bold text-primary">
                         R$ {product.price.toFixed(2)}
                       </span>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8"
+                        onClick={() => {
+                          setSelectedProduct(product);
+                          setEditDialogOpen(true);
+                        }}
+                      >
                         <Edit className="h-4 w-4" />
                       </Button>
                     </div>
@@ -157,6 +168,11 @@ export default function Produtos() {
       </main>
 
       <AddProductDialog open={addDialogOpen} onOpenChange={setAddDialogOpen} />
+      <EditProductDialog 
+        product={selectedProduct} 
+        open={editDialogOpen} 
+        onOpenChange={setEditDialogOpen} 
+      />
       <BottomNav />
     </div>
   );
