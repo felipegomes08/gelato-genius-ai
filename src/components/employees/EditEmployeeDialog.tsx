@@ -43,7 +43,8 @@ export function EditEmployeeDialog({ employee, open, onOpenChange }: EditEmploye
       if (error) throw error;
 
       toast.success("Funcionário atualizado com sucesso!");
-      queryClient.invalidateQueries({ queryKey: ["employees"] });
+      await queryClient.invalidateQueries({ queryKey: ["employees"] });
+      await queryClient.refetchQueries({ queryKey: ["employees"] });
       onOpenChange(false);
     } catch (error: any) {
       toast.error(error.message || "Erro ao atualizar funcionário");

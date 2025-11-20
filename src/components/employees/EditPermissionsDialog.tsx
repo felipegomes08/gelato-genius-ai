@@ -63,9 +63,10 @@ export function EditPermissionsDialog({ employee, open, onOpenChange }: EditPerm
 
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success("Permissões atualizadas com sucesso!");
-      queryClient.invalidateQueries({ queryKey: ["employees"] });
+      await queryClient.invalidateQueries({ queryKey: ["employees"] });
+      await queryClient.refetchQueries({ queryKey: ["employees"] });
       onOpenChange(false);
     },
     onError: (error: any) => {
