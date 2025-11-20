@@ -5,9 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { Search, Plus, Edit, Package, Loader2 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import { AddProductDialog } from "@/components/products/AddProductDialog";
 import { EditProductDialog } from "@/components/products/EditProductDialog";
 
@@ -29,6 +31,8 @@ export default function Produtos() {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: products = [], isLoading } = useQuery({
     queryKey: ["products"],
@@ -36,13 +40,38 @@ export default function Produtos() {
       const { data, error } = await supabase
         .from("products")
         .select("*")
-        .eq("is_active", true)
+        .order("is_active", { ascending: false })
         .order("name");
 
       if (error) throw error;
       return data as Product[];
     },
   });
+
+  const handleToggleActive = async (product: Product) => {
+    try {
+      const { error } = await supabase
+        .from("products")
+        .update({ is_active: !product.is_active })
+        .eq("id", product.id);
+
+      if (error) throw error;
+
+      toast({
+        title: product.is_active ? "Produto desativado" : "Produto ativado",
+        description: `${product.name} foi ${product.is_active ? "desativado" : "ativado"} com sucesso.`,
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+    } catch (error) {
+      console.error("Error toggling product status:", error);
+      toast({
+        title: "Erro ao atualizar produto",
+        description: "Não foi possível alterar o status do produto.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const filteredProducts = products.filter((p) =>
     p.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -95,11 +124,21 @@ export default function Produtos() {
             {filteredProducts.map((product) => {
             const stockStatus = getStockStatus(product);
             return (
-              <Card key={product.id} className="shadow-sm hover:shadow-md transition-shadow">
+              <Card 
+                key={product.id} 
+                className={`shadow-sm hover:shadow-md transition-all ${!product.is_active ? 'opacity-60' : ''}`}
+              >
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
-                      <h3 className="font-semibold mb-1">{product.name}</h3>
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-semibold">{product.name}</h3>
+                        {!product.is_active && (
+                          <Badge variant="secondary" className="text-xs">
+                            Inativo
+                          </Badge>
+                        )}
+                      </div>
                       <p className="text-sm text-muted-foreground">
                         {product.category}
                       </p>
@@ -159,6 +198,16 @@ export default function Produtos() {
                       </span>
                     </div>
                   )}
+
+                  <div className="flex items-center justify-between pt-3 mt-3 border-t">
+                    <span className="text-sm text-muted-foreground">
+                      {product.is_active ? "Produto ativo" : "Produto inativo"}
+                    </span>
+                    <Switch
+                      checked={product.is_active}
+                      onCheckedChange={() => handleToggleActive(product)}
+                    />
+                  </div>
                 </CardContent>
               </Card>
             );
