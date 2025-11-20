@@ -1,13 +1,28 @@
-import { User, Settings, Shield } from "lucide-react";
+import { User, Settings, Shield, Edit, UserX, UserCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { EditPermissionsDialog } from "./EditPermissionsDialog";
+import { EditEmployeeDialog } from "./EditEmployeeDialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 interface Employee {
   id: string;
   full_name: string;
   phone: string | null;
+  is_active: boolean;
   user_roles: Array<{ role: "master" | "employee" }>;
   user_permissions: Array<{
     can_access_sales: boolean;
@@ -27,6 +42,9 @@ interface EmployeeListProps {
 export function EmployeeList({ employees, isLoading }: EmployeeListProps) {
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [isPermissionsDialogOpen, setIsPermissionsDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeactivateDialogOpen, setIsDeactivateDialogOpen] = useState(false);
+  const queryClient = useQueryClient();
 
   if (isLoading) {
     return (
@@ -61,6 +79,39 @@ export function EmployeeList({ employees, isLoading }: EmployeeListProps) {
     setIsPermissionsDialogOpen(true);
   };
 
+  const handleEdit = (employee: Employee) => {
+    setSelectedEmployee(employee);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleDeactivateClick = (employee: Employee) => {
+    setSelectedEmployee(employee);
+    setIsDeactivateDialogOpen(true);
+  };
+
+  const handleToggleActive = async () => {
+    if (!selectedEmployee) return;
+
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ is_active: !selectedEmployee.is_active })
+        .eq("id", selectedEmployee.id);
+
+      if (error) throw error;
+
+      toast.success(
+        selectedEmployee.is_active
+          ? "Funcionário desativado com sucesso!"
+          : "Funcionário reativado com sucesso!"
+      );
+      queryClient.invalidateQueries({ queryKey: ["employees"] });
+      setIsDeactivateDialogOpen(false);
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao atualizar status do funcionário");
+    }
+  };
+
   return (
     <>
       <div className="space-y-3">
@@ -71,7 +122,9 @@ export function EmployeeList({ employees, isLoading }: EmployeeListProps) {
           return (
             <div
               key={employee.id}
-              className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+              className={`flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors ${
+                !employee.is_active ? "opacity-60" : ""
+              }`}
             >
               <div className="flex items-center gap-3 flex-1">
                 <div className={`p-2 rounded-full ${isMaster ? "bg-primary/10" : "bg-secondary/10"}`}>
@@ -81,8 +134,15 @@ export function EmployeeList({ employees, isLoading }: EmployeeListProps) {
                     <User className={`h-5 w-5 text-secondary`} />
                   )}
                 </div>
-                <div>
-                  <p className="font-medium">{employee.full_name}</p>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium">{employee.full_name}</p>
+                    {!employee.is_active && (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-destructive/10 text-destructive">
+                        Inativo
+                      </span>
+                    )}
+                  </div>
                   <p className="text-sm text-muted-foreground">
                     {isMaster ? "Master" : "Funcionário"}
                     {employee.phone && ` • ${employee.phone}`}
@@ -90,13 +150,36 @@ export function EmployeeList({ employees, isLoading }: EmployeeListProps) {
                 </div>
               </div>
               {!isMaster && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleEditPermissions(employee)}
-                >
-                  <Settings className="h-4 w-4" />
-                </Button>
+                <div className="flex gap-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleEdit(employee)}
+                    title="Editar"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleEditPermissions(employee)}
+                    title="Permissões"
+                  >
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDeactivateClick(employee)}
+                    title={employee.is_active ? "Desativar" : "Reativar"}
+                  >
+                    {employee.is_active ? (
+                      <UserX className="h-4 w-4" />
+                    ) : (
+                      <UserCheck className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
               )}
             </div>
           );
@@ -104,11 +187,38 @@ export function EmployeeList({ employees, isLoading }: EmployeeListProps) {
       </div>
 
       {selectedEmployee && (
-        <EditPermissionsDialog
-          employee={selectedEmployee}
-          open={isPermissionsDialogOpen}
-          onOpenChange={setIsPermissionsDialogOpen}
-        />
+        <>
+          <EditPermissionsDialog
+            employee={selectedEmployee}
+            open={isPermissionsDialogOpen}
+            onOpenChange={setIsPermissionsDialogOpen}
+          />
+          <EditEmployeeDialog
+            employee={selectedEmployee}
+            open={isEditDialogOpen}
+            onOpenChange={setIsEditDialogOpen}
+          />
+          <AlertDialog open={isDeactivateDialogOpen} onOpenChange={setIsDeactivateDialogOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  {selectedEmployee.is_active ? "Desativar" : "Reativar"} Funcionário
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  {selectedEmployee.is_active
+                    ? "Tem certeza que deseja desativar este funcionário? Ele não poderá mais acessar o sistema, mas todo o histórico será mantido."
+                    : "Tem certeza que deseja reativar este funcionário? Ele poderá acessar o sistema novamente."}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={handleToggleActive}>
+                  Confirmar
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </>
       )}
     </>
   );

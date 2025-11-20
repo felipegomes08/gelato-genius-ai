@@ -18,6 +18,7 @@ export default function Funcionarios() {
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
+        .order("is_active", { ascending: false })
         .order("full_name");
 
       if (error) throw error;
