@@ -4,64 +4,56 @@ import { BottomNav } from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, TrendingUp, TrendingDown, Calendar } from "lucide-react";
+import { Plus, TrendingUp, TrendingDown, Calendar, Loader2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Transaction {
   id: string;
-  type: "entrada" | "saida";
-  title: string;
+  transaction_type: "entrada" | "saida";
+  description: string;
   amount: number;
   category: string;
-  date: string;
+  transaction_date: string;
 }
-
-const mockTransactions: Transaction[] = [
-  {
-    id: "1",
-    type: "entrada",
-    title: "Vendas do dia",
-    amount: 2450.0,
-    category: "Vendas",
-    date: "2024-01-15",
-  },
-  {
-    id: "2",
-    type: "saida",
-    title: "Compra de ingredientes",
-    amount: 680.0,
-    category: "Matéria-prima",
-    date: "2024-01-15",
-  },
-  {
-    id: "3",
-    type: "saida",
-    title: "Conta de energia",
-    amount: 320.0,
-    category: "Despesas fixas",
-    date: "2024-01-14",
-  },
-  {
-    id: "4",
-    type: "entrada",
-    title: "Vendas do dia",
-    amount: 1890.0,
-    category: "Vendas",
-    date: "2024-01-14",
-  },
-];
 
 export default function Financeiro() {
   const [period] = useState("Hoje");
 
-  const totalEntradas = mockTransactions
-    .filter((t) => t.type === "entrada")
-    .reduce((sum, t) => sum + t.amount, 0);
+  const { data: transactions = [], isLoading } = useQuery({
+    queryKey: ["financial_transactions"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("financial_transactions")
+        .select("*")
+        .order("transaction_date", { ascending: false });
 
-  const totalSaidas = mockTransactions
-    .filter((t) => t.type === "saida")
-    .reduce((sum, t) => sum + t.amount, 0);
+      if (error) throw error;
+      return data as Transaction[];
+    },
+  });
+
+  const totalEntradas = transactions
+    .filter((t) => t.transaction_type === "entrada")
+    .reduce((sum, t) => sum + Number(t.amount), 0);
+
+  const totalSaidas = transactions
+    .filter((t) => t.transaction_type === "saida")
+    .reduce((sum, t) => sum + Number(t.amount), 0);
 
   const saldo = totalEntradas - totalSaidas;
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background pb-20">
+        <Header title="Financeiro" />
+        <main className="max-w-md mx-auto p-4 flex items-center justify-center min-h-[50vh]">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </main>
+        <BottomNav />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -136,49 +128,55 @@ export default function Financeiro() {
             <CardTitle className="text-lg">Movimentações</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {mockTransactions.map((transaction) => (
-              <div
-                key={transaction.id}
-                className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
-              >
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`p-2 rounded-lg ${
-                      transaction.type === "entrada"
-                        ? "bg-success/10"
-                        : "bg-destructive/10"
-                    }`}
-                  >
-                    {transaction.type === "entrada" ? (
-                      <TrendingUp className="h-4 w-4 text-success" />
-                    ) : (
-                      <TrendingDown className="h-4 w-4 text-destructive" />
-                    )}
+            {transactions.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">
+                Nenhuma movimentação registrada
+              </p>
+            ) : (
+              transactions.map((transaction) => (
+                <div
+                  key={transaction.id}
+                  className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`p-2 rounded-lg ${
+                        transaction.transaction_type === "entrada"
+                          ? "bg-success/10"
+                          : "bg-destructive/10"
+                      }`}
+                    >
+                      {transaction.transaction_type === "entrada" ? (
+                        <TrendingUp className="h-4 w-4 text-success" />
+                      ) : (
+                        <TrendingDown className="h-4 w-4 text-destructive" />
+                      )}
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">{transaction.description}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {transaction.category}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-medium text-sm">{transaction.title}</p>
+                  <div className="text-right">
+                    <p
+                      className={`font-semibold text-sm ${
+                        transaction.transaction_type === "entrada"
+                          ? "text-success"
+                          : "text-destructive"
+                      }`}
+                    >
+                      {transaction.transaction_type === "entrada" ? "+" : "-"}R${" "}
+                      {Number(transaction.amount).toFixed(2)}
+                    </p>
                     <p className="text-xs text-muted-foreground">
-                      {transaction.category}
+                      {new Date(transaction.transaction_date).toLocaleDateString("pt-BR")}
                     </p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p
-                    className={`font-semibold text-sm ${
-                      transaction.type === "entrada"
-                        ? "text-success"
-                        : "text-destructive"
-                    }`}
-                  >
-                    {transaction.type === "entrada" ? "+" : "-"}R${" "}
-                    {transaction.amount.toFixed(2)}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {new Date(transaction.date).toLocaleDateString("pt-BR")}
-                  </p>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </CardContent>
         </Card>
       </main>
