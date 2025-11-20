@@ -105,7 +105,8 @@ export function EmployeeList({ employees, isLoading }: EmployeeListProps) {
           ? "Funcionário desativado com sucesso!"
           : "Funcionário reativado com sucesso!"
       );
-      queryClient.invalidateQueries({ queryKey: ["employees"] });
+      await queryClient.invalidateQueries({ queryKey: ["employees"] });
+      await queryClient.refetchQueries({ queryKey: ["employees"] });
       setIsDeactivateDialogOpen(false);
     } catch (error: any) {
       toast.error(error.message || "Erro ao atualizar status do funcionário");
