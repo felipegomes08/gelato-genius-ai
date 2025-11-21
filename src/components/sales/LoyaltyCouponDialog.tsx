@@ -39,7 +39,7 @@ export function LoyaltyCouponDialog({
             Deseja criar um cupom de <span className="font-bold text-primary">R$ {suggestedValue.toFixed(2)}</span> para <span className="font-semibold">{customerName}</span>?
             <div className="mt-3 p-3 bg-primary/5 rounded-lg text-sm">
               <p className="text-muted-foreground">
-                O cupom será válido por 30 dias e poderá ser usado na próxima compra.
+                O cupom será válido por 7 dias e poderá ser usado na próxima compra.
               </p>
             </div>
           </AlertDialogDescription>
