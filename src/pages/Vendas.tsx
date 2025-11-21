@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { SelectCustomerDialog } from "@/components/sales/SelectCustomerDialog";
 import { ManualDiscountDialog } from "@/components/sales/ManualDiscountDialog";
-import { PaymentMethodDialog } from "@/components/sales/PaymentMethodDialog";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Search, Plus, Minus, X, User, Percent, Banknote, Smartphone, CreditCard, Sparkles, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 
@@ -51,7 +51,6 @@ export default function Vendas() {
   
   const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
   const [discountDialogOpen, setDiscountDialogOpen] = useState(false);
-  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
   const queryClient = useQueryClient();
@@ -535,24 +534,52 @@ export default function Vendas() {
               </Card>
             )}
 
-            {/* Payment Method */}
-            <Button
-              variant="outline"
-              className="w-full h-11"
-              onClick={() => setPaymentDialogOpen(true)}
-            >
-              {paymentMethod ? (
-                <>
-                  {(() => {
-                    const Icon = paymentMethodIcons[paymentMethod];
-                    return <Icon className="h-4 w-4 mr-2" />;
-                  })()}
-                  {paymentMethodLabels[paymentMethod]}
-                </>
-              ) : (
-                "Selecionar Forma de Pagamento"
-              )}
-            </Button>
+            {/* Payment Method Toggle */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Forma de Pagamento</label>
+              <ToggleGroup
+                type="single"
+                value={paymentMethod || ""}
+                onValueChange={(value) => {
+                  if (value) {
+                    setPaymentMethod(value as "cash" | "pix" | "debit" | "credit");
+                  }
+                }}
+                className="grid grid-cols-2 gap-2"
+              >
+                <ToggleGroupItem
+                  value="cash"
+                  className="h-16 flex flex-col gap-1 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                >
+                  <Banknote className="h-5 w-5" />
+                  <span className="text-xs">Dinheiro</span>
+                </ToggleGroupItem>
+
+                <ToggleGroupItem
+                  value="pix"
+                  className="h-16 flex flex-col gap-1 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                >
+                  <Smartphone className="h-5 w-5" />
+                  <span className="text-xs">PIX</span>
+                </ToggleGroupItem>
+
+                <ToggleGroupItem
+                  value="debit"
+                  className="h-16 flex flex-col gap-1 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                >
+                  <CreditCard className="h-5 w-5" />
+                  <span className="text-xs">Débito</span>
+                </ToggleGroupItem>
+
+                <ToggleGroupItem
+                  value="credit"
+                  className="h-16 flex flex-col gap-1 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                >
+                  <CreditCard className="h-5 w-5" />
+                  <span className="text-xs">Crédito</span>
+                </ToggleGroupItem>
+              </ToggleGroup>
+            </div>
 
             {/* Total */}
             <Card className="p-4 bg-primary/5 border-primary/20">
@@ -601,12 +628,6 @@ export default function Vendas() {
         onOpenChange={setDiscountDialogOpen}
         subtotal={subtotal}
         onApplyDiscount={setManualDiscount}
-      />
-
-      <PaymentMethodDialog
-        open={paymentDialogOpen}
-        onOpenChange={setPaymentDialogOpen}
-        onSelectPaymentMethod={setPaymentMethod}
       />
     </div>
   );
