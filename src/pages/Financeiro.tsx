@@ -4,14 +4,26 @@ import { BottomNav } from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, TrendingUp, TrendingDown, Calendar, Loader2 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { Plus, TrendingUp, TrendingDown, Calendar, Loader2, Edit2, Trash2 } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AddTransactionDialog } from "@/components/financial/AddTransactionDialog";
+import { EditTransactionDialog } from "@/components/financial/EditTransactionDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 interface Transaction {
   id: string;
-  transaction_type: "entrada" | "saida";
+  transaction_type: "income" | "expense";
   description: string;
   amount: number;
   category: string;
@@ -21,6 +33,12 @@ interface Transaction {
 export default function Financeiro() {
   const [period] = useState("Hoje");
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [transactionToDelete, setTransactionToDelete] = useState<string | null>(null);
+  
+  const queryClient = useQueryClient();
 
   const { data: transactions = [], isLoading } = useQuery({
     queryKey: ["financial_transactions"],
@@ -36,14 +54,51 @@ export default function Financeiro() {
   });
 
   const totalEntradas = transactions
-    .filter((t) => t.transaction_type === "entrada")
+    .filter((t) => t.transaction_type === "income")
     .reduce((sum, t) => sum + Number(t.amount), 0);
 
   const totalSaidas = transactions
-    .filter((t) => t.transaction_type === "saida")
+    .filter((t) => t.transaction_type === "expense")
     .reduce((sum, t) => sum + Number(t.amount), 0);
 
   const saldo = totalEntradas - totalSaidas;
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("financial_transactions")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["financial_transactions"] });
+      toast.success("Transação excluída com sucesso!");
+      setDeleteDialogOpen(false);
+      setTransactionToDelete(null);
+    },
+    onError: (error) => {
+      console.error("Erro ao excluir transação:", error);
+      toast.error("Erro ao excluir transação. Tente novamente.");
+    },
+  });
+
+  const handleEdit = (transaction: Transaction) => {
+    setSelectedTransaction(transaction);
+    setEditDialogOpen(true);
+  };
+
+  const handleDeleteClick = (id: string) => {
+    setTransactionToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (transactionToDelete) {
+      deleteMutation.mutate(transactionToDelete);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -138,43 +193,63 @@ export default function Financeiro() {
               transactions.map((transaction) => (
                 <div
                   key={transaction.id}
-                  className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
+                  className="flex items-center justify-between p-3 rounded-lg bg-muted/50 group"
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 flex-1">
                     <div
                       className={`p-2 rounded-lg ${
-                        transaction.transaction_type === "entrada"
+                        transaction.transaction_type === "income"
                           ? "bg-success/10"
                           : "bg-destructive/10"
                       }`}
                     >
-                      {transaction.transaction_type === "entrada" ? (
+                      {transaction.transaction_type === "income" ? (
                         <TrendingUp className="h-4 w-4 text-success" />
                       ) : (
                         <TrendingDown className="h-4 w-4 text-destructive" />
                       )}
                     </div>
-                    <div>
+                    <div className="flex-1">
                       <p className="font-medium text-sm">{transaction.description}</p>
                       <p className="text-xs text-muted-foreground">
                         {transaction.category}
                       </p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p
-                      className={`font-semibold text-sm ${
-                        transaction.transaction_type === "entrada"
-                          ? "text-success"
-                          : "text-destructive"
-                      }`}
-                    >
-                      {transaction.transaction_type === "entrada" ? "+" : "-"}R${" "}
-                      {Number(transaction.amount).toFixed(2)}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(transaction.transaction_date).toLocaleDateString("pt-BR")}
-                    </p>
+                  <div className="flex items-center gap-2">
+                    <div className="text-right">
+                      <p
+                        className={`font-semibold text-sm ${
+                          transaction.transaction_type === "income"
+                            ? "text-success"
+                            : "text-destructive"
+                        }`}
+                      >
+                        {transaction.transaction_type === "income" ? "+" : "-"}R${" "}
+                        {Number(transaction.amount).toFixed(2)}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(transaction.transaction_date).toLocaleDateString("pt-BR")}
+                      </p>
+                    </div>
+                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => handleEdit(transaction)}
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:text-destructive"
+                        onClick={() => handleDeleteClick(transaction.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))
@@ -189,6 +264,32 @@ export default function Financeiro() {
         open={addDialogOpen} 
         onOpenChange={setAddDialogOpen}
       />
+
+      <EditTransactionDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        transaction={selectedTransaction}
+      />
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir esta transação? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
