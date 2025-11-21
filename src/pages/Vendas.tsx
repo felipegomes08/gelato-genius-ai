@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { SelectCustomerDialog } from "@/components/sales/SelectCustomerDialog";
 import { ManualDiscountDialog } from "@/components/sales/ManualDiscountDialog";
+import { LoyaltyCouponDialog } from "@/components/sales/LoyaltyCouponDialog";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Search, Plus, Minus, X, User, Percent, Banknote, Smartphone, CreditCard, Sparkles, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
@@ -51,6 +52,7 @@ export default function Vendas() {
   
   const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
   const [discountDialogOpen, setDiscountDialogOpen] = useState(false);
+  const [loyaltyCouponDialogOpen, setLoyaltyCouponDialogOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
   const queryClient = useQueryClient();
@@ -149,6 +151,10 @@ export default function Vendas() {
 
   const totalDiscount = couponDiscount + manualDiscountAmount;
   const total = Math.max(0, subtotal - totalDiscount);
+
+  const getSuggestedCouponValue = () => {
+    return total <= 30 ? 5 : 10;
+  };
 
   const paymentMethodLabels = {
     cash: "Dinheiro",
@@ -291,6 +297,43 @@ export default function Vendas() {
     },
   });
 
+  const createLoyaltyCouponMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedCustomer) return;
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
+      
+      const couponValue = getSuggestedCouponValue();
+      const code = `FIDELIDADE-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+      const expireDate = new Date();
+      expireDate.setDate(expireDate.getDate() + 30);
+      
+      const { error } = await supabase
+        .from("coupons")
+        .insert({
+          customer_id: selectedCustomer.id,
+          code: code,
+          discount_type: "fixed",
+          discount_value: couponValue,
+          expire_at: expireDate.toISOString(),
+          is_active: true,
+          created_by: user.id,
+        });
+      
+      if (error) throw error;
+      
+      return { code, value: couponValue };
+    },
+    onSuccess: (data) => {
+      toast.success(`Cupom ${data?.code} de R$ ${data?.value} criado com sucesso!`);
+      queryClient.invalidateQueries({ queryKey: ["customer-coupons"] });
+    },
+    onError: (error: Error) => {
+      toast.error("Erro ao criar cupom: " + error.message);
+    },
+  });
+
   const handleConfirmSale = () => {
     if (cart.length === 0) {
       toast.error("Adicione produtos ao carrinho");
@@ -300,6 +343,24 @@ export default function Vendas() {
       toast.error("Selecione a forma de pagamento");
       return;
     }
+    
+    // Se tem cliente, mostrar sugestão de cupom de fidelidade
+    if (selectedCustomer) {
+      setLoyaltyCouponDialogOpen(true);
+    } else {
+      // Sem cliente, confirmar direto
+      confirmSaleMutation.mutate();
+    }
+  };
+
+  const handleConfirmWithCoupon = async () => {
+    setLoyaltyCouponDialogOpen(false);
+    await createLoyaltyCouponMutation.mutateAsync();
+    confirmSaleMutation.mutate();
+  };
+
+  const handleConfirmWithoutCoupon = () => {
+    setLoyaltyCouponDialogOpen(false);
     confirmSaleMutation.mutate();
   };
 
@@ -628,6 +689,15 @@ export default function Vendas() {
         onOpenChange={setDiscountDialogOpen}
         subtotal={subtotal}
         onApplyDiscount={setManualDiscount}
+      />
+
+      <LoyaltyCouponDialog
+        open={loyaltyCouponDialogOpen}
+        onOpenChange={setLoyaltyCouponDialogOpen}
+        customerName={selectedCustomer?.name || ""}
+        suggestedValue={getSuggestedCouponValue()}
+        onConfirmWithCoupon={handleConfirmWithCoupon}
+        onConfirmWithoutCoupon={handleConfirmWithoutCoupon}
       />
     </div>
   );
