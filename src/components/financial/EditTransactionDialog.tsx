@@ -2,9 +2,12 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { format } from "date-fns";
+import { CalendarIcon, Loader2 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -26,9 +29,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
 import { Textarea } from "@/components/ui/textarea";
 
 const formSchema = z.object({
@@ -46,7 +54,9 @@ const formSchema = z.object({
     .refine((val) => !isNaN(Number(val)) && Number(val) > 0, {
       message: "Valor deve ser maior que zero",
     }),
-  transaction_date: z.string().min(1, "Selecione uma data"),
+  transaction_date: z.date({
+    required_error: "Selecione uma data",
+  }),
   notes: z.string().max(500, "Notas devem ter no máximo 500 caracteres").optional(),
 });
 
@@ -97,7 +107,7 @@ export function EditTransactionDialog({
       description: "",
       category: "",
       amount: "",
-      transaction_date: new Date().toISOString().split("T")[0],
+      transaction_date: new Date(),
       notes: "",
     },
   });
@@ -109,7 +119,7 @@ export function EditTransactionDialog({
         description: transaction.description,
         category: transaction.category,
         amount: transaction.amount.toString(),
-        transaction_date: new Date(transaction.transaction_date).toISOString().split("T")[0],
+        transaction_date: new Date(transaction.transaction_date),
         notes: transaction.notes || "",
       });
     }
@@ -131,7 +141,7 @@ export function EditTransactionDialog({
           description: values.description,
           category: values.category,
           amount: Number(values.amount),
-          transaction_date: values.transaction_date,
+          transaction_date: values.transaction_date.toISOString(),
           notes: values.notes || null,
         })
         .eq("id", transaction.id);
@@ -249,11 +259,40 @@ export function EditTransactionDialog({
               control={form.control}
               name="transaction_date"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="flex flex-col">
                   <FormLabel>Data</FormLabel>
-                  <FormControl>
-                    <Input type="date" {...field} />
-                  </FormControl>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full pl-3 text-left font-normal",
+                            !field.value && "text-muted-foreground"
+                          )}
+                        >
+                          {field.value ? (
+                            format(field.value, "dd/MM/yyyy")
+                          ) : (
+                            <span>Selecione a data</span>
+                          )}
+                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        disabled={(date) =>
+                          date > new Date() || date < new Date("2020-01-01")
+                        }
+                        initialFocus
+                        className={cn("p-3 pointer-events-auto")}
+                      />
+                    </PopoverContent>
+                  </Popover>
                   <FormMessage />
                 </FormItem>
               )}
