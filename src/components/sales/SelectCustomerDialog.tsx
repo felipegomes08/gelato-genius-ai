@@ -59,16 +59,29 @@ export function SelectCustomerDialog({
   const [couponExpireDate, setCouponExpireDate] = useState<Date>();
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [selectedCouponId, setSelectedCouponId] = useState<string | null>(null);
+  const [createCouponForExisting, setCreateCouponForExisting] = useState(false);
+  const [existingCouponCode, setExistingCouponCode] = useState("");
+  const [existingCouponType, setExistingCouponType] = useState<"percentage" | "fixed">("fixed");
+  const [existingCouponValue, setExistingCouponValue] = useState("");
+  const [existingCouponExpireDate, setExistingCouponExpireDate] = useState<Date>();
 
   const queryClient = useQueryClient();
 
-  // Definir data de expiração padrão (7 dias) quando criar cupom
+  // Definir data de expiração padrão (7 dias) quando criar cupom (novo cliente)
   useEffect(() => {
     if (createCoupon && !couponExpireDate) {
       const defaultDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
       setCouponExpireDate(defaultDate);
     }
   }, [createCoupon]);
+
+  // Definir data de expiração padrão (7 dias) quando criar cupom (cliente existente)
+  useEffect(() => {
+    if (createCouponForExisting && !existingCouponExpireDate) {
+      const defaultDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      setExistingCouponExpireDate(defaultDate);
+    }
+  }, [createCouponForExisting]);
 
   // Buscar clientes
   const { data: customers, isLoading: loadingCustomers } = useQuery({
@@ -186,9 +199,53 @@ export function SelectCustomerDialog({
     await createCouponMutation.mutateAsync(customerId);
   };
 
+  // Criar cupom para cliente existente
+  const createCouponForExistingMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedCustomerId) throw new Error("Nenhum cliente selecionado");
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
+
+      const { data, error } = await supabase
+        .from("coupons")
+        .insert({
+          customer_id: selectedCustomerId,
+          code: existingCouponCode,
+          discount_type: existingCouponType,
+          discount_value: parseFloat(existingCouponValue),
+          expire_at: existingCouponExpireDate!.toISOString(),
+          created_by: user.id,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data as Coupon;
+    },
+    onSuccess: (coupon) => {
+      queryClient.invalidateQueries({ queryKey: ["customer-coupons", selectedCustomerId] });
+      toast.success("Cupom criado com sucesso!");
+      setCreateCouponForExisting(false);
+      setExistingCouponCode("");
+      setExistingCouponValue("");
+      setExistingCouponExpireDate(undefined);
+      // Selecionar automaticamente o cupom recém-criado
+      setSelectedCouponId(coupon.id);
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Erro ao criar cupom");
+    },
+  });
+
   const generateCouponCode = () => {
     const code = Math.random().toString(36).substring(2, 10).toUpperCase();
     setCouponCode(code);
+  };
+
+  const generateExistingCouponCode = () => {
+    const code = Math.random().toString(36).substring(2, 10).toUpperCase();
+    setExistingCouponCode(code);
   };
 
   const handleSelectExistingCustomer = () => {
@@ -202,6 +259,30 @@ export function SelectCustomerDialog({
     }
   };
 
+  const handleCreateCouponForExisting = () => {
+    if (!existingCouponCode.trim()) {
+      toast.error("Digite o código do cupom");
+      return;
+    }
+    
+    if (!existingCouponValue || parseFloat(existingCouponValue) <= 0) {
+      toast.error("Digite um valor válido para o desconto");
+      return;
+    }
+
+    if (existingCouponType === "percentage" && parseFloat(existingCouponValue) > 100) {
+      toast.error("Desconto percentual não pode ser maior que 100%");
+      return;
+    }
+
+    if (!existingCouponExpireDate) {
+      toast.error("Selecione uma data de validade");
+      return;
+    }
+
+    createCouponForExistingMutation.mutate();
+  };
+
   const resetForm = () => {
     setSearchTerm("");
     setNewCustomerName("");
@@ -213,6 +294,11 @@ export function SelectCustomerDialog({
     setCouponExpireDate(undefined);
     setSelectedCustomerId(null);
     setSelectedCouponId(null);
+    setCreateCouponForExisting(false);
+    setExistingCouponCode("");
+    setExistingCouponType("fixed");
+    setExistingCouponValue("");
+    setExistingCouponExpireDate(undefined);
   };
 
   return (
@@ -275,36 +361,160 @@ export function SelectCustomerDialog({
             </div>
 
             {/* Cupons do cliente selecionado */}
-            {selectedCustomerId && customerCoupons && customerCoupons.length > 0 && (
-              <div className="space-y-2 pt-4 border-t">
-                <Label className="text-sm font-medium">Cupons Disponíveis</Label>
-                {customerCoupons.map((coupon) => (
-                  <Card
-                    key={coupon.id}
-                    className={cn(
-                      "p-3 cursor-pointer transition-colors hover:bg-muted/50",
-                      selectedCouponId === coupon.id && "border-primary bg-primary/5"
-                    )}
-                    onClick={() => setSelectedCouponId(coupon.id)}
+            {selectedCustomerId && (
+              <div className="space-y-3 pt-4 border-t">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium">Cupons Disponíveis</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCreateCouponForExisting(!createCouponForExisting)}
                   >
-                    <div className="flex items-center justify-between">
+                    {createCouponForExisting ? "Cancelar" : "+ Novo Cupom"}
+                  </Button>
+                </div>
+
+                {/* Formulário de criação de cupom para cliente existente */}
+                {createCouponForExisting && (
+                  <Card className="p-4 space-y-3 bg-muted/30">
+                    <div className="flex gap-2">
                       <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <p className="font-mono font-semibold">{coupon.code}</p>
-                          <Badge variant="secondary">
-                            {coupon.discount_type === "percentage"
-                              ? `${coupon.discount_value}%`
-                              : `R$ ${coupon.discount_value.toFixed(2)}`}
-                          </Badge>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          Válido até {format(new Date(coupon.expire_at), "dd/MM/yyyy")}
-                        </p>
+                        <Label>Código do Cupom</Label>
+                        <Input
+                          value={existingCouponCode}
+                          onChange={(e) => setExistingCouponCode(e.target.value.toUpperCase())}
+                          placeholder="DESCONTO10"
+                        />
                       </div>
-                      <Sparkles className="h-5 w-5 text-primary" />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={generateExistingCouponCode}
+                        className="mt-6"
+                      >
+                        Gerar
+                      </Button>
                     </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <Label>Tipo</Label>
+                        <div className="flex gap-2 mt-1">
+                          <Button
+                            type="button"
+                            variant={existingCouponType === "fixed" ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setExistingCouponType("fixed")}
+                            className="flex-1"
+                          >
+                            R$
+                          </Button>
+                          <Button
+                            type="button"
+                            variant={existingCouponType === "percentage" ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setExistingCouponType("percentage")}
+                            className="flex-1"
+                          >
+                            %
+                          </Button>
+                        </div>
+                      </div>
+                      <div>
+                        <Label>Valor</Label>
+                        <Input
+                          type="number"
+                          value={existingCouponValue}
+                          onChange={(e) => setExistingCouponValue(e.target.value)}
+                          placeholder={existingCouponType === "percentage" ? "10" : "15.00"}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label>Data de Validade</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full justify-start text-left font-normal mt-1",
+                              !existingCouponExpireDate && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {existingCouponExpireDate
+                              ? format(existingCouponExpireDate, "dd/MM/yyyy")
+                              : "Selecione a data"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                          <Calendar
+                            mode="single"
+                            selected={existingCouponExpireDate}
+                            onSelect={setExistingCouponExpireDate}
+                            disabled={(date) => date < new Date()}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+
+                    <Button
+                      onClick={handleCreateCouponForExisting}
+                      disabled={
+                        !existingCouponCode ||
+                        !existingCouponValue ||
+                        !existingCouponExpireDate ||
+                        createCouponForExistingMutation.isPending
+                      }
+                      className="w-full"
+                      size="sm"
+                    >
+                      {createCouponForExistingMutation.isPending ? "Criando..." : "Criar Cupom"}
+                    </Button>
                   </Card>
-                ))}
+                )}
+
+                {/* Lista de cupons existentes */}
+                {customerCoupons && customerCoupons.length > 0 && (
+                  <div className="space-y-2">
+                    {customerCoupons.map((coupon) => (
+                      <Card
+                        key={coupon.id}
+                        className={cn(
+                          "p-3 cursor-pointer transition-colors hover:bg-muted/50",
+                          selectedCouponId === coupon.id && "border-primary bg-primary/5"
+                        )}
+                        onClick={() => setSelectedCouponId(coupon.id)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <p className="font-mono font-semibold">{coupon.code}</p>
+                              <Badge variant="secondary">
+                                {coupon.discount_type === "percentage"
+                                  ? `${coupon.discount_value}%`
+                                  : `R$ ${coupon.discount_value.toFixed(2)}`}
+                              </Badge>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              Válido até {format(new Date(coupon.expire_at), "dd/MM/yyyy")}
+                            </p>
+                          </div>
+                          <Sparkles className="h-5 w-5 text-primary" />
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+
+                {!createCouponForExisting && (!customerCoupons || customerCoupons.length === 0) && (
+                  <p className="text-sm text-muted-foreground text-center py-2">
+                    Nenhum cupom disponível
+                  </p>
+                )}
               </div>
             )}
 
