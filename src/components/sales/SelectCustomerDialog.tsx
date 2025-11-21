@@ -230,8 +230,6 @@ export function SelectCustomerDialog({
       setExistingCouponCode("");
       setExistingCouponValue("");
       setExistingCouponExpireDate(undefined);
-      // Selecionar automaticamente o cupom recém-criado
-      setSelectedCouponId(coupon.id);
     },
     onError: (error: any) => {
       toast.error(error.message || "Erro ao criar cupom");
