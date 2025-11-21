@@ -7,10 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { SelectCustomerDialog } from "@/components/sales/SelectCustomerDialog";
 import { ManualDiscountDialog } from "@/components/sales/ManualDiscountDialog";
 import { PaymentMethodDialog } from "@/components/sales/PaymentMethodDialog";
-import { Search, Plus, Minus, X, User, Percent, Banknote, Smartphone, CreditCard, Sparkles } from "lucide-react";
+import { Search, Plus, Minus, X, User, Percent, Banknote, Smartphone, CreditCard, Sparkles, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 
 interface CartItem {
@@ -326,43 +327,59 @@ export default function Vendas() {
           />
         </div>
 
-        {/* Products Quick Add */}
-        {searchTerm && (
-          <Card className="p-3 space-y-2 max-h-48 overflow-y-auto">
-            {isLoading ? (
-              <p className="text-center text-sm text-muted-foreground py-4">
-                Carregando produtos...
+        {/* Products Grid - Always Visible */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <h2 className="font-semibold">Produtos</h2>
+            <span className="text-sm text-muted-foreground">
+              {filteredProducts.length} disponíveis
+            </span>
+          </div>
+          
+          {isLoading ? (
+            <Card className="p-8 text-center">
+              <p className="text-muted-foreground">Carregando produtos...</p>
+            </Card>
+          ) : filteredProducts.length > 0 ? (
+            <ScrollArea className="h-64">
+              <div className="grid grid-cols-2 gap-2 pr-4">
+                {filteredProducts.map((product) => (
+                  <button
+                    key={product.id}
+                    onClick={() => addToCart(product)}
+                    className="group relative flex flex-col gap-2 p-3 rounded-lg border bg-card hover:bg-accent/50 hover:border-primary/50 transition-all text-left"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm leading-tight line-clamp-2">
+                          {product.name}
+                        </p>
+                        {product.controls_stock && (
+                          <Badge 
+                            variant={product.current_stock && product.current_stock > 0 ? "secondary" : "destructive"}
+                            className="mt-1 text-xs h-5"
+                          >
+                            Est: {product.current_stock || 0}
+                          </Badge>
+                        )}
+                      </div>
+                      <ShoppingCart className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                    </div>
+                    <p className="font-bold text-primary">
+                      R$ {product.price.toFixed(2)}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            </ScrollArea>
+          ) : (
+            <Card className="p-8 text-center">
+              <p className="text-muted-foreground">
+                {searchTerm ? "Nenhum produto encontrado" : "Nenhum produto cadastrado"}
               </p>
-            ) : filteredProducts.length > 0 ? (
-              filteredProducts.map((product) => (
-                <button
-                  key={product.id}
-                  onClick={() => {
-                    addToCart(product);
-                    setSearchTerm("");
-                  }}
-                  className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors text-left"
-                >
-                  <div className="flex-1">
-                    <span className="font-medium text-sm">{product.name}</span>
-                    {product.controls_stock && (
-                      <span className="text-xs text-muted-foreground ml-2">
-                        (Est: {product.current_stock})
-                      </span>
-                    )}
-                  </div>
-                  <span className="font-semibold text-primary">
-                    R$ {product.price.toFixed(2)}
-                  </span>
-                </button>
-              ))
-            ) : (
-              <p className="text-center text-sm text-muted-foreground py-4">
-                Nenhum produto encontrado
-              </p>
-            )}
-          </Card>
-        )}
+            </Card>
+          )}
+        </div>
 
         {/* Cart */}
         <div className="space-y-3">
