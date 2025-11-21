@@ -4,7 +4,14 @@ import { BottomNav } from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, TrendingUp, TrendingDown, Calendar, Loader2, Edit2, Trash2 } from "lucide-react";
+import { Plus, TrendingUp, TrendingDown, Calendar, Loader2, Edit2, Trash2, ChevronDown } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { startOfDay, startOfWeek, startOfMonth, startOfYear, isAfter, isBefore } from "date-fns";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AddTransactionDialog } from "@/components/financial/AddTransactionDialog";
@@ -30,8 +37,10 @@ interface Transaction {
   transaction_date: string;
 }
 
+type PeriodType = "Hoje" | "Semana" | "Mês" | "Ano";
+
 export default function Financeiro() {
-  const [period] = useState("Hoje");
+  const [period, setPeriod] = useState<PeriodType>("Hoje");
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
@@ -53,11 +62,40 @@ export default function Financeiro() {
     },
   });
 
-  const totalEntradas = transactions
+  const getFilteredTransactions = () => {
+    const now = new Date();
+    let startDate: Date;
+
+    switch (period) {
+      case "Hoje":
+        startDate = startOfDay(now);
+        break;
+      case "Semana":
+        startDate = startOfWeek(now, { weekStartsOn: 0 });
+        break;
+      case "Mês":
+        startDate = startOfMonth(now);
+        break;
+      case "Ano":
+        startDate = startOfYear(now);
+        break;
+      default:
+        startDate = startOfDay(now);
+    }
+
+    return transactions.filter((t) => {
+      const transactionDate = new Date(t.transaction_date);
+      return isAfter(transactionDate, startDate) || transactionDate.getTime() === startDate.getTime();
+    });
+  };
+
+  const filteredTransactions = getFilteredTransactions();
+
+  const totalEntradas = filteredTransactions
     .filter((t) => t.transaction_type === "income")
     .reduce((sum, t) => sum + Number(t.amount), 0);
 
-  const totalSaidas = transactions
+  const totalSaidas = filteredTransactions
     .filter((t) => t.transaction_type === "expense")
     .reduce((sum, t) => sum + Number(t.amount), 0);
 
@@ -119,10 +157,29 @@ export default function Financeiro() {
       <main className="max-w-md mx-auto p-4 space-y-4">
         {/* Period Filter */}
         <div className="flex items-center justify-between">
-          <Button variant="outline" size="sm">
-            <Calendar className="h-4 w-4 mr-2" />
-            {period}
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Calendar className="h-4 w-4 mr-2" />
+                {period}
+                <ChevronDown className="h-4 w-4 ml-2" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem onClick={() => setPeriod("Hoje")}>
+                Hoje
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setPeriod("Semana")}>
+                Semana
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setPeriod("Mês")}>
+                Mês
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setPeriod("Ano")}>
+                Ano
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button size="sm" className="shadow-sm" onClick={() => setAddDialogOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Nova Transação
@@ -185,12 +242,12 @@ export default function Financeiro() {
             <CardTitle className="text-lg">Movimentações</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {transactions.length === 0 ? (
+            {filteredTransactions.length === 0 ? (
               <p className="text-center text-muted-foreground py-8">
-                Nenhuma movimentação registrada
+                Nenhuma movimentação registrada para este período
               </p>
             ) : (
-              transactions.map((transaction) => (
+              filteredTransactions.map((transaction) => (
                 <div
                   key={transaction.id}
                   className="flex items-center justify-between p-3 rounded-lg bg-muted/50 group"
