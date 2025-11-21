@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -54,13 +54,21 @@ export function SelectCustomerDialog({
   const [newCustomerPhone, setNewCustomerPhone] = useState("");
   const [createCoupon, setCreateCoupon] = useState(false);
   const [couponCode, setCouponCode] = useState("");
-  const [couponType, setCouponType] = useState<"percentage" | "fixed">("percentage");
+  const [couponType, setCouponType] = useState<"percentage" | "fixed">("fixed");
   const [couponValue, setCouponValue] = useState("");
   const [couponExpireDate, setCouponExpireDate] = useState<Date>();
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [selectedCouponId, setSelectedCouponId] = useState<string | null>(null);
 
   const queryClient = useQueryClient();
+
+  // Definir data de expiração padrão (7 dias) quando criar cupom
+  useEffect(() => {
+    if (createCoupon && !couponExpireDate) {
+      const defaultDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      setCouponExpireDate(defaultDate);
+    }
+  }, [createCoupon]);
 
   // Buscar clientes
   const { data: customers, isLoading: loadingCustomers } = useQuery({
@@ -200,7 +208,7 @@ export function SelectCustomerDialog({
     setNewCustomerPhone("");
     setCreateCoupon(false);
     setCouponCode("");
-    setCouponType("percentage");
+    setCouponType("fixed");
     setCouponValue("");
     setCouponExpireDate(undefined);
     setSelectedCustomerId(null);
@@ -368,21 +376,21 @@ export function SelectCustomerDialog({
                       <div className="flex gap-2 mt-1">
                         <Button
                           type="button"
-                          variant={couponType === "percentage" ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => setCouponType("percentage")}
-                          className="flex-1"
-                        >
-                          %
-                        </Button>
-                        <Button
-                          type="button"
                           variant={couponType === "fixed" ? "default" : "outline"}
                           size="sm"
                           onClick={() => setCouponType("fixed")}
                           className="flex-1"
                         >
                           R$
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={couponType === "percentage" ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setCouponType("percentage")}
+                          className="flex-1"
+                        >
+                          %
                         </Button>
                       </div>
                     </div>

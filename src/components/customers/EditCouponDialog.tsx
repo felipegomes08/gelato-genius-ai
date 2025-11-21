@@ -131,12 +131,12 @@ export function EditCouponDialog({ coupon, customerName, open, onOpenChange }: E
               <Label>Tipo de Desconto</Label>
               <RadioGroup value={discountType} onValueChange={setDiscountType}>
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="percentage" id="edit-percentage" />
-                  <Label htmlFor="edit-percentage" className="font-normal">Porcentagem (%)</Label>
-                </div>
-                <div className="flex items-center space-x-2">
                   <RadioGroupItem value="fixed" id="edit-fixed" />
                   <Label htmlFor="edit-fixed" className="font-normal">Valor Fixo (R$)</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="percentage" id="edit-percentage" />
+                  <Label htmlFor="edit-percentage" className="font-normal">Porcentagem (%)</Label>
                 </div>
               </RadioGroup>
             </div>

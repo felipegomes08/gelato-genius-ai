@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -22,10 +22,18 @@ interface AddCouponDialogProps {
 
 export function AddCouponDialog({ customerId, customerName, open, onOpenChange }: AddCouponDialogProps) {
   const [code, setCode] = useState("");
-  const [discountType, setDiscountType] = useState<"percentage" | "fixed">("percentage");
+  const [discountType, setDiscountType] = useState<"percentage" | "fixed">("fixed");
   const [discountValue, setDiscountValue] = useState("");
   const [expireDate, setExpireDate] = useState<Date | undefined>(undefined);
   const queryClient = useQueryClient();
+
+  // Definir data de expiração padrão (7 dias) quando o dialog abrir
+  useEffect(() => {
+    if (open && !expireDate) {
+      const defaultDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      setExpireDate(defaultDate);
+    }
+  }, [open]);
 
   const generateCode = () => {
     const randomCode = Math.random().toString(36).substring(2, 10).toUpperCase();
@@ -131,15 +139,15 @@ export function AddCouponDialog({ customerId, customerName, open, onOpenChange }
               onValueChange={(value) => setDiscountType(value as "percentage" | "fixed")}
             >
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="percentage" id="percentage" />
-                <Label htmlFor="percentage" className="cursor-pointer font-normal">
-                  Porcentagem (%)
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
                 <RadioGroupItem value="fixed" id="fixed" />
                 <Label htmlFor="fixed" className="cursor-pointer font-normal">
                   Valor Fixo (R$)
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="percentage" id="percentage" />
+                <Label htmlFor="percentage" className="cursor-pointer font-normal">
+                  Porcentagem (%)
                 </Label>
               </div>
             </RadioGroup>
