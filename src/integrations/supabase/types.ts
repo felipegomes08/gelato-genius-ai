@@ -24,6 +24,7 @@ export type Database = {
           discount_value: number
           expire_at: string
           id: string
+          is_active: boolean
           is_used: boolean
           used_at: string | null
         }
@@ -36,6 +37,7 @@ export type Database = {
           discount_value: number
           expire_at: string
           id?: string
+          is_active?: boolean
           is_used?: boolean
           used_at?: string | null
         }
@@ -48,6 +50,7 @@ export type Database = {
           discount_value?: number
           expire_at?: string
           id?: string
+          is_active?: boolean
           is_used?: boolean
           used_at?: string | null
         }
