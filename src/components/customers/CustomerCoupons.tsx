@@ -1,12 +1,25 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Plus, Percent, DollarSign, CheckCircle2, XCircle } from "lucide-react";
+import { Plus, Percent, DollarSign, CheckCircle2, XCircle, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AddCouponDialog } from "./AddCouponDialog";
+import { EditCouponDialog } from "./EditCouponDialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 interface Customer {
   id: string;
@@ -21,6 +34,9 @@ interface CustomerCouponsProps {
 
 export function CustomerCoupons({ customer, open, onOpenChange }: CustomerCouponsProps) {
   const [isAddCouponOpen, setIsAddCouponOpen] = useState(false);
+  const [editingCoupon, setEditingCoupon] = useState<any>(null);
+  const [deletingCouponId, setDeletingCouponId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   const { data: coupons, isLoading } = useQuery({
     queryKey: ["customer-coupons", customer?.id],
@@ -37,6 +53,44 @@ export function CustomerCoupons({ customer, open, onOpenChange }: CustomerCoupon
       return data || [];
     },
     enabled: !!customer && open,
+  });
+
+  const toggleActiveMutation = useMutation({
+    mutationFn: async ({ id, isActive }: { id: string; isActive: boolean }) => {
+      const { error } = await supabase
+        .from("coupons")
+        .update({ is_active: !isActive })
+        .eq("id", id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["customer-coupons", customer?.id] });
+      toast.success("Status do cupom atualizado!");
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Erro ao atualizar cupom");
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("coupons")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["customer-coupons", customer?.id] });
+      toast.success("Cupom excluído com sucesso!");
+      setDeletingCouponId(null);
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Erro ao excluir cupom");
+      setDeletingCouponId(null);
+    },
   });
 
   return (
@@ -74,18 +128,27 @@ export function CustomerCoupons({ customer, open, onOpenChange }: CustomerCoupon
                 {coupons.map((coupon) => {
                   const isExpired = new Date(coupon.expire_at) < new Date();
                   const isUsed = coupon.is_used;
+                  const isActive = coupon.is_active;
                   
                   return (
                     <div
                       key={coupon.id}
-                      className="p-4 border border-border rounded-lg"
+                      className={cn(
+                        "p-4 border border-border rounded-lg",
+                        !isActive && "opacity-50"
+                      )}
                     >
                       <div className="flex items-start justify-between mb-2">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-mono font-semibold text-foreground">
                             {coupon.code}
                           </span>
-                          {isUsed ? (
+                          {!isActive ? (
+                            <Badge variant="secondary" className="gap-1">
+                              <XCircle className="h-3 w-3" />
+                              Inativo
+                            </Badge>
+                          ) : isUsed ? (
                             <Badge variant="secondary" className="gap-1">
                               <CheckCircle2 className="h-3 w-3" />
                               Usado
@@ -115,7 +178,7 @@ export function CustomerCoupons({ customer, open, onOpenChange }: CustomerCoupon
                           )}
                         </div>
                       </div>
-                      <div className="text-sm text-muted-foreground space-y-1">
+                      <div className="text-sm text-muted-foreground space-y-1 mb-3">
                         <p>
                           Validade: {new Date(coupon.expire_at).toLocaleDateString("pt-BR")}
                         </p>
@@ -124,6 +187,44 @@ export function CustomerCoupons({ customer, open, onOpenChange }: CustomerCoupon
                             Usado em: {new Date(coupon.used_at).toLocaleDateString("pt-BR")}
                           </p>
                         )}
+                      </div>
+                      <div className="flex gap-2">
+                        {!isUsed && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setEditingCoupon(coupon)}
+                          >
+                            <Pencil className="h-3 w-3 mr-1" />
+                            Editar
+                          </Button>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => toggleActiveMutation.mutate({ id: coupon.id, isActive: coupon.is_active })}
+                          disabled={toggleActiveMutation.isPending}
+                        >
+                          {isActive ? (
+                            <>
+                              <XCircle className="h-3 w-3 mr-1" />
+                              Inativar
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle2 className="h-3 w-3 mr-1" />
+                              Ativar
+                            </>
+                          )}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => setDeletingCouponId(coupon.id)}
+                        >
+                          <Trash2 className="h-3 w-3 mr-1" />
+                          Excluir
+                        </Button>
                       </div>
                     </div>
                   );
@@ -140,6 +241,33 @@ export function CustomerCoupons({ customer, open, onOpenChange }: CustomerCoupon
         open={isAddCouponOpen}
         onOpenChange={setIsAddCouponOpen}
       />
+
+      <EditCouponDialog
+        coupon={editingCoupon}
+        customerName={customer?.name || ""}
+        open={!!editingCoupon}
+        onOpenChange={(open) => !open && setEditingCoupon(null)}
+      />
+
+      <AlertDialog open={!!deletingCouponId} onOpenChange={(open) => !open && setDeletingCouponId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Cupom</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este cupom? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deletingCouponId && deleteMutation.mutate(deletingCouponId)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
