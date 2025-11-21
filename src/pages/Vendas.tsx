@@ -304,10 +304,10 @@ export default function Vendas() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
       
-      const couponValue = getSuggestedCouponValue();
-      const code = `FIDELIDADE-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
-      const expireDate = new Date();
-      expireDate.setDate(expireDate.getDate() + 30);
+    const couponValue = getSuggestedCouponValue();
+    const code = `FIDELIDADE-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+    const expireDate = new Date();
+    expireDate.setDate(expireDate.getDate() + 7);
       
       const { error } = await supabase
         .from("coupons")
