@@ -485,7 +485,7 @@ export function SelectCustomerDialog({
                           "p-3 cursor-pointer transition-colors hover:bg-muted/50",
                           selectedCouponId === coupon.id && "border-primary bg-primary/5"
                         )}
-                        onClick={() => setSelectedCouponId(coupon.id)}
+                        onClick={() => setSelectedCouponId(selectedCouponId === coupon.id ? null : coupon.id)}
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
