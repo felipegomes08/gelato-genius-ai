@@ -41,7 +41,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Textarea } from "@/components/ui/textarea";
 
 const formSchema = z.object({
-  transaction_type: z.enum(["entrada", "saida"], {
+  transaction_type: z.enum(["income", "expense"], {
     required_error: "Selecione o tipo de transação",
   }),
   description: z
@@ -103,7 +103,7 @@ export function AddTransactionDialog({
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      transaction_type: "saida",
+      transaction_type: "expense",
       description: "",
       category: "",
       amount: "",
@@ -187,8 +187,8 @@ export function AddTransactionDialog({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="entrada">Entrada</SelectItem>
-                      <SelectItem value="saida">Saída</SelectItem>
+                      <SelectItem value="income">Entrada</SelectItem>
+                      <SelectItem value="expense">Saída</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
