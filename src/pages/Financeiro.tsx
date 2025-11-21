@@ -83,9 +83,11 @@ export default function Financeiro() {
         startDate = startOfDay(now);
     }
 
+    const startDateString = startDate.toISOString().split("T")[0];
+
     return transactions.filter((t) => {
-      const transactionDate = new Date(t.transaction_date);
-      return isAfter(transactionDate, startDate) || transactionDate.getTime() === startDate.getTime();
+      const transactionDateString = new Date(t.transaction_date).toISOString().split("T")[0];
+      return transactionDateString >= startDateString;
     });
   };
 
@@ -286,7 +288,11 @@ export default function Financeiro() {
                         {Number(transaction.amount).toFixed(2)}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(transaction.transaction_date).toLocaleDateString("pt-BR")}
+                        {(() => {
+                          const iso = new Date(transaction.transaction_date).toISOString().split("T")[0];
+                          const [year, month, day] = iso.split("-");
+                          return `${day}/${month}/${year}`;
+                        })()}
                       </p>
                     </div>
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
