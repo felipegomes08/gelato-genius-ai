@@ -21,7 +21,14 @@ export default function Comandas() {
         .select(`
           *,
           customer:customers(id, name, phone),
-          items:sale_items(*)
+          items:sale_items(
+            id,
+            product_id,
+            product_name,
+            quantity,
+            unit_price,
+            subtotal
+          )
         `)
         .eq("status", "open")
         .order("created_at", { ascending: false });
@@ -36,7 +43,13 @@ export default function Comandas() {
     },
   });
 
-  const totalValue = comandas?.reduce((sum, c) => sum + Number(c.total), 0) || 0;
+  // Calcular total real a partir dos items
+  const totalValue = comandas?.reduce((sum, c) => {
+    const comandaTotal = c.items?.reduce((itemSum: number, item: any) => {
+      return itemSum + (Number(item.subtotal) || 0);
+    }, 0) || 0;
+    return sum + comandaTotal;
+  }, 0) || 0;
 
   return (
     <AppLayout title="Comandas">

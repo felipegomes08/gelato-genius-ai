@@ -119,7 +119,9 @@ export function AddItemsDialog({ open, onOpenChange, comanda }: AddItemsDialogPr
     },
     onSuccess: () => {
       toast.success("Itens adicionados à comanda!");
+      // Invalidar todas as queries relacionadas
       queryClient.invalidateQueries({ queryKey: ["comandas-abertas"] });
+      queryClient.invalidateQueries({ queryKey: ["products-active"] });
       setCart([]);
       onOpenChange(false);
     },
