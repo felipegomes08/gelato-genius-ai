@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { Header } from "@/components/Header";
-import { BottomNav } from "@/components/BottomNav";
+import { AppLayout } from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -86,10 +85,8 @@ export default function Produtos() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      <Header title="Produtos" />
-
-      <main className="max-w-md mx-auto p-4 space-y-4">
+    <AppLayout title="Produtos">
+      <div className="max-w-md md:max-w-7xl mx-auto space-y-4">
         {/* Search and Add */}
         <div className="flex gap-2">
           <div className="relative flex-1">
@@ -120,7 +117,7 @@ export default function Produtos() {
             {searchTerm ? "Nenhum produto encontrado" : "Nenhum produto cadastrado"}
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {filteredProducts.map((product) => {
             const stockStatus = getStockStatus(product);
             return (
@@ -214,7 +211,6 @@ export default function Produtos() {
           })}
           </div>
         )}
-      </main>
 
       <AddProductDialog open={addDialogOpen} onOpenChange={setAddDialogOpen} />
       <EditProductDialog 
@@ -222,7 +218,7 @@ export default function Produtos() {
         open={editDialogOpen} 
         onOpenChange={setEditDialogOpen} 
       />
-      <BottomNav />
-    </div>
+      </div>
+    </AppLayout>
   );
 }

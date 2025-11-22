@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Header } from "@/components/Header";
-import { BottomNav } from "@/components/BottomNav";
+import { AppLayout } from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -429,12 +428,14 @@ export default function Vendas() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      <Header title="PDV - Vendas" />
-
-      <main className="max-w-md mx-auto p-4 space-y-3">
-        {/* Search */}
-        <div className="relative">
+    <AppLayout title="PDV - Vendas">
+      <div className="max-w-md md:max-w-7xl mx-auto space-y-3 md:pb-0">
+        {/* Desktop: Split view - Produtos + Carrinho lado a lado */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Produtos (2 colunas em desktop) */}
+        <div className="lg:col-span-2 space-y-3">
+          {/* Search */}
+          <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           <Input
             placeholder="Buscar produto..."
@@ -460,8 +461,8 @@ export default function Vendas() {
                 <p className="text-muted-foreground">Carregando produtos...</p>
               </Card>
             ) : filteredProducts.length > 0 ? (
-              <div className="overflow-x-auto -mx-1 pb-1">
-                <div className="flex gap-2 px-1">
+              <div className="overflow-x-auto md:overflow-visible -mx-1 pb-1">
+                <div className="flex md:grid md:grid-cols-2 lg:grid-cols-3 gap-2 px-1">
                   {filteredProducts.map((product) => (
                     <button
                       key={product.id}
@@ -499,7 +500,10 @@ export default function Vendas() {
               </Card>
             )}
           </div>
+        </div>
 
+        {/* Carrinho (1 coluna fixa à direita em desktop) */}
+        <div className="lg:col-span-1 space-y-3">
           {/* Cart */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
@@ -733,9 +737,9 @@ export default function Vendas() {
             </Button>
           </div>
         )}
-      </main>
-
-      <BottomNav />
+        </div>
+      </div>
+      </div>
 
       {/* Dialogs */}
       <SelectCustomerDialog
@@ -772,6 +776,6 @@ export default function Vendas() {
           }
         }}
       />
-    </div>
+    </AppLayout>
   );
 }

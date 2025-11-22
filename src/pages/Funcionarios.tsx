@@ -1,5 +1,4 @@
-import { Header } from "@/components/Header";
-import { BottomNav } from "@/components/BottomNav";
+import { AppLayout } from "@/components/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
@@ -49,10 +48,8 @@ export default function Funcionarios() {
   });
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      <Header title="Funcionários" />
-      
-      <main className="max-w-md mx-auto p-4 space-y-4">
+    <AppLayout title="Funcionários">
+      <div className="max-w-md md:max-w-7xl mx-auto space-y-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0">
             <CardTitle>Gerenciar Funcionários</CardTitle>
@@ -69,14 +66,12 @@ export default function Funcionarios() {
             <EmployeeList employees={employees} isLoading={isLoading} />
           </CardContent>
         </Card>
-      </main>
 
       <AddEmployeeDialog 
         open={isAddDialogOpen} 
         onOpenChange={setIsAddDialogOpen}
       />
-
-      <BottomNav />
-    </div>
+      </div>
+    </AppLayout>
   );
 }

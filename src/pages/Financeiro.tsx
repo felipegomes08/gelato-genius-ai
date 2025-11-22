@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { Header } from "@/components/Header";
-import { BottomNav } from "@/components/BottomNav";
+import { AppLayout } from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -142,21 +141,17 @@ export default function Financeiro() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background pb-20">
-        <Header title="Financeiro" />
-        <main className="max-w-md mx-auto p-4 flex items-center justify-center min-h-[50vh]">
+      <AppLayout title="Financeiro">
+        <div className="max-w-md md:max-w-7xl mx-auto flex items-center justify-center min-h-[50vh]">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </main>
-        <BottomNav />
-      </div>
+        </div>
+      </AppLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      <Header title="Financeiro" />
-
-      <main className="max-w-md mx-auto p-4 space-y-4">
+    <AppLayout title="Financeiro">
+      <div className="max-w-md md:max-w-7xl mx-auto space-y-4">
         {/* Period Filter */}
         <div className="flex items-center justify-between">
           <DropdownMenu>
@@ -189,7 +184,7 @@ export default function Financeiro() {
         </div>
 
         {/* Summary Cards */}
-        <div className="grid gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <Card className="shadow-sm bg-gradient-to-br from-success/10 to-success/5 border-success/20">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -319,11 +314,8 @@ export default function Financeiro() {
             )}
           </CardContent>
         </Card>
-      </main>
 
-      <BottomNav />
-
-      <AddTransactionDialog 
+      <AddTransactionDialog
         open={addDialogOpen} 
         onOpenChange={setAddDialogOpen}
       />
@@ -353,6 +345,7 @@ export default function Financeiro() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+      </div>
+    </AppLayout>
   );
 }
