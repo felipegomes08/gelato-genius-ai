@@ -1,9 +1,9 @@
 import { Header } from "@/components/Header";
 import { BottomNav } from "@/components/BottomNav";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TrendingUp, ShoppingCart, Package, AlertTriangle, Users, DollarSign } from "lucide-react";
+import { TrendingUp, ShoppingCart, Package, AlertTriangle, Users, DollarSign, Sparkles } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { startOfDay, endOfDay, subDays, startOfMonth, endOfMonth, subMonths } from "date-fns";
@@ -189,7 +189,7 @@ export default function Dashboard() {
     queryFn: async () => {
       const { data } = await supabase
         .from('products')
-        .select('id')
+        .select('id, name, current_stock, low_stock_threshold')
         .eq('controls_stock', true)
         .eq('is_active', true)
         .or('current_stock.lte.low_stock_threshold,current_stock.is.null');
@@ -213,6 +213,50 @@ export default function Dashboard() {
   const currentAverageTicket = currentSales && currentSales.length > 0
     ? currentRevenue / currentSales.length
     : 0;
+
+  // Query: Insights da IA
+  const { data: aiInsights, isLoading: loadingInsights } = useQuery({
+    queryKey: ['ai-insights', period, currentRevenue, currentProductsSold],
+    queryFn: async () => {
+      const salesData = {
+        revenue: currentRevenue,
+        itemsSold: currentProductsSold,
+        averageTicket: currentAverageTicket,
+        changePercent: Number(revenueChange),
+        topProducts: (topProducts || []).map((p: any) => ({
+          name: p.name,
+          quantity: p.sold,
+          revenue: p.revenue
+        }))
+      };
+
+      const stockData = {
+        lowStockCount: stockAlerts?.length || 0,
+        criticalProducts: (stockAlerts || []).slice(0, 3).map((p: any) => p.name)
+      };
+
+      const customersData = {
+        topCustomers: (topCustomers || []).map((c: any) => ({
+          name: c.name,
+          total: c.total
+        }))
+      };
+
+      const { data, error } = await supabase.functions.invoke('generate-insights', {
+        body: {
+          salesData,
+          stockData,
+          customersData,
+          period: getPeriodLabel()
+        }
+      });
+
+      if (error) throw error;
+      return data.insights;
+    },
+    enabled: !loadingCurrentSales && !loadingCurrentItems && (topProducts?.length || 0) > 0,
+    refetchInterval: 300000, // 5 minutos
+  });
 
   const getPeriodLabel = () => {
     switch (period) {
@@ -421,22 +465,34 @@ export default function Dashboard() {
         </Card>
 
         {/* AI Insights */}
-        <Card className="shadow-sm bg-gradient-to-br from-accent/5 to-accent/10 border-accent/20">
+        <Card className="shadow-sm">
           <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <span className="text-accent">✨</span>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
               Insights da IA
             </CardTitle>
+            <CardDescription>
+              Análise inteligente dos seus dados de negócio
+            </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-2">
-            <p className="text-sm">
-              <span className="font-semibold">Reposição recomendada:</span> 20 unidades de Casquinha Média 
-              - previsão de 28 vendas nos próximos 7 dias.
-            </p>
-            <p className="text-sm">
-              <span className="font-semibold">Promoção sugerida:</span> 15% de desconto em Picolé de Frutas 
-              no fim de semana para aumentar o giro.
-            </p>
+          <CardContent className="space-y-3">
+            {loadingInsights ? (
+              <>
+                <Skeleton className="h-16 w-full" />
+                <Skeleton className="h-16 w-full" />
+                <Skeleton className="h-16 w-full" />
+              </>
+            ) : aiInsights ? (
+              <div className="prose prose-sm max-w-none">
+                <div className="whitespace-pre-line text-sm text-foreground">
+                  {aiInsights}
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Aguardando dados para gerar insights...
+              </p>
+            )}
           </CardContent>
         </Card>
       </main>
