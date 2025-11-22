@@ -35,22 +35,22 @@ Informações do cupom:
 
 Requisitos da mensagem:
 - Tom amigável e próximo
-- Incluir emojis: 🤎🎉✨🤤🩷🩵🏷️😍
+- NÃO usar emojis, apenas texto limpo
 - Mencionar que ganha outro cupom na próxima compra
 - Máximo 400 caracteres
 - Cada chamada deve gerar texto diferente, mas SEMPRE retorne só UMA mensagem
 
 Exemplo de formato (varie o conteúdo):
-"🏷️ CUPOM CASHBACK 
+"CUPOM CASHBACK
 
-Amei te atender hoje! 🤎
-Você garantiu R$${couponValue},00 de cashback para usar na Churrosteria! 🎉
+Amei te atender hoje!
+Você garantiu R$${couponValue},00 de cashback para usar na Churrosteria!
 
 Válido até ${expiryDate}
-🩵 Use em compras a partir de R$${minPurchase},00
-Use e já garante um novo cupom! 🏷️
+Use em compras a partir de R$${minPurchase},00
+Use e já garante um novo cupom!
 
-Te vejo em breve! 😍"`;
+Te vejo em breve!"`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
