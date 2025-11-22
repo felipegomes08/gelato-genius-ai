@@ -1,5 +1,4 @@
-import { Header } from "@/components/Header";
-import { BottomNav } from "@/components/BottomNav";
+import { AppLayout } from "@/components/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -309,10 +308,8 @@ export default function Dashboard() {
     },
   ];
   return (
-    <div className="min-h-screen bg-background pb-20">
-      <Header title="Painel" />
-      
-      <main className="max-w-md mx-auto p-4 space-y-6">
+    <AppLayout title="Dashboard">
+      <div className="max-w-md md:max-w-7xl mx-auto space-y-6">
         {/* Period Filter */}
         <Card className="shadow-sm">
           <CardContent className="p-3">
@@ -328,7 +325,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {stats.map((stat) => (
             <Card key={stat.title} className="shadow-sm hover:shadow-md transition-shadow">
               <CardContent className="p-4">
@@ -361,44 +358,42 @@ export default function Dashboard() {
           ))}
         </div>
 
-        {/* Top Products */}
+        {/* AI Insights - Full width */}
         <Card className="shadow-sm">
           <CardHeader>
-            <CardTitle className="text-lg">Produtos Mais Vendidos</CardTitle>
-            <p className="text-xs text-muted-foreground">{getPeriodLabel()}</p>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              Insights da IA
+            </CardTitle>
+            <CardDescription>
+              Análise inteligente dos seus dados de negócio
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            {loadingTopProducts ? (
+            {loadingInsights ? (
               <>
                 <Skeleton className="h-16 w-full" />
                 <Skeleton className="h-16 w-full" />
                 <Skeleton className="h-16 w-full" />
               </>
-            ) : topProducts && topProducts.length > 0 ? (
-              topProducts.map((product: any, index) => (
-                <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold text-sm">
-                      {index + 1}
-                    </div>
-                    <div>
-                      <p className="font-medium text-sm">{product.name}</p>
-                      <p className="text-xs text-muted-foreground">{product.sold} unidades</p>
-                    </div>
-                  </div>
-                  <p className="font-semibold text-sm">R$ {product.revenue.toFixed(2)}</p>
+            ) : aiInsights ? (
+              <div className="prose prose-sm max-w-none">
+                <div className="whitespace-pre-line text-sm text-foreground">
+                  {aiInsights}
                 </div>
-              ))
+              </div>
             ) : (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                Nenhuma venda no período selecionado
+              <p className="text-sm text-muted-foreground">
+                Aguardando dados para gerar insights...
               </p>
             )}
           </CardContent>
         </Card>
 
-        {/* Top Customers */}
-        <Card className="shadow-sm">
+        {/* Top Products e Top Customers side by side */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Top Products */}
+          <Card className="shadow-sm">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <Users className="h-5 w-5 text-primary" />
@@ -434,7 +429,47 @@ export default function Dashboard() {
               </p>
             )}
           </CardContent>
-        </Card>
+          </Card>
+
+          {/* Top Customers */}
+          <Card className="shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Users className="h-5 w-5 text-primary" />
+                Clientes que Mais Compraram
+              </CardTitle>
+              <p className="text-xs text-muted-foreground">{getPeriodLabel()}</p>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {loadingTopCustomers ? (
+                <>
+                  <Skeleton className="h-16 w-full" />
+                  <Skeleton className="h-16 w-full" />
+                  <Skeleton className="h-16 w-full" />
+                </>
+              ) : topCustomers && topCustomers.length > 0 ? (
+                topCustomers.map((customer: any, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-accent/10 text-accent font-bold text-sm">
+                        {index + 1}
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm">{customer.name}</p>
+                        <p className="text-xs text-muted-foreground">{customer.purchases} compras</p>
+                      </div>
+                    </div>
+                    <p className="font-semibold text-sm">R$ {customer.total.toFixed(2)}</p>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  Nenhum cliente com compras no período selecionado
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Resumo do Período */}
         <Card className="shadow-sm">
@@ -463,41 +498,7 @@ export default function Dashboard() {
             </div>
           </CardContent>
         </Card>
-
-        {/* AI Insights */}
-        <Card className="shadow-sm">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary" />
-              Insights da IA
-            </CardTitle>
-            <CardDescription>
-              Análise inteligente dos seus dados de negócio
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {loadingInsights ? (
-              <>
-                <Skeleton className="h-16 w-full" />
-                <Skeleton className="h-16 w-full" />
-                <Skeleton className="h-16 w-full" />
-              </>
-            ) : aiInsights ? (
-              <div className="prose prose-sm max-w-none">
-                <div className="whitespace-pre-line text-sm text-foreground">
-                  {aiInsights}
-                </div>
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                Aguardando dados para gerar insights...
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      </main>
-
-      <BottomNav />
-    </div>
+      </div>
+    </AppLayout>
   );
 }
