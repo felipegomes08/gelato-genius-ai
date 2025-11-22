@@ -24,33 +24,32 @@ serve(async (req) => {
 
     const minPurchase = couponValue === 5 ? 30 : 50;
 
-    const prompt = `Crie uma mensagem de WhatsApp calorosa e empolgante para notificar um cliente que ganhou um cupom cashback.
+    const prompt = `Crie UMA única mensagem de WhatsApp calorosa e empolgante para notificar ${customerName} que ganhou um cupom cashback na Churrosteria.
 
-Informações:
-- Valor do cupom: R$${couponValue},00
+Informações do cupom:
+- Valor: R$${couponValue},00
 - Validade: ${expiryDate}
 - Valor mínimo de compra: R$${minPurchase},00
-- Nome do cliente: ${customerName}
 
-Requisitos:
-- Tom amigável e próximo
-- Usar emojis relevantes (🤎🎉✨🤤🩷🩵🏷️😍)
-- Mencionar que pode garantir outro cupom na próxima compra
-- Máximo 500 caracteres
-- Incluir todas as informações importantes
-- Criar variações naturais a cada chamada
+IMPORTANTE: 
+- Retorne APENAS o texto da mensagem, sem títulos, numerações ou prefixos como "Variação"
+- Use um tom amigável e próximo
+- Inclua emojis relevantes: 🤎🎉✨🤤🩷🩵🏷️😍
+- Mencione que pode garantir outro cupom na próxima compra
+- Máximo 400 caracteres
+- Seja natural e varie o texto a cada chamada
 
-Exemplo de referência (mas crie VARIAÇÕES diferentes):
-"🏷️ | CUPOM CASHBACK | 
+Exemplo de formato (varie o conteúdo):
+"🏷️ CUPOM CASHBACK 
 
 Amei te atender hoje! 🤎
-Uhuu! Você garantiu R$5,00 de cashback para usar na Churrosteria! 🎉
-Use na sua próxima compra dentro de 7 dias.
-Corre pra aproveitar e experimentar uma delícia nova! 🤤✨ Qualquer dúvida é só chamar! 🤩🩷
+Você garantiu R$${couponValue},00 de cashback para usar na Churrosteria! 🎉
 
-Validade: ${expiryDate}
-🩵Ele pode ser utilizado em compras a partir de R$30,00.
-Use e já garante um novo cupom 🏷️ Te vejo em breve! 😍"`;
+Válido até ${expiryDate}
+🩵 Use em compras a partir de R$${minPurchase},00
+Use e já garante um novo cupom! 🏷️
+
+Te vejo em breve! 😍"`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -76,16 +75,23 @@ Use e já garante um novo cupom 🏷️ Te vejo em breve! 😍"`;
     }
 
     const data = await response.json();
-    const generatedMessage = data.choices?.[0]?.message?.content;
+    let generatedMessage = data.choices?.[0]?.message?.content;
 
     if (!generatedMessage) {
       throw new Error("Mensagem não gerada pela IA");
     }
 
+    // Limpar a mensagem: remover títulos de variação e pegar apenas a primeira seção
+    generatedMessage = generatedMessage
+      .replace(/\*\*Variação \d+:\*\*/gi, '')
+      .replace(/Variação \d+:/gi, '')
+      .split('\n\n**')[0] // Pegar apenas a primeira seção caso venham múltiplas
+      .trim();
+
     console.log("Mensagem gerada com sucesso:", generatedMessage);
 
     return new Response(JSON.stringify({ message: generatedMessage }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json; charset=utf-8' },
     });
   } catch (error) {
     console.error('Error in generate-coupon-message:', error);
