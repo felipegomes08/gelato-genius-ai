@@ -425,6 +425,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_access_financial_area: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
+      can_access_products_area: { Args: { _user_id: string }; Returns: boolean }
+      can_access_sales_area: { Args: { _user_id: string }; Returns: boolean }
+      can_access_settings_area: { Args: { _user_id: string }; Returns: boolean }
+      can_access_stock_area: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
