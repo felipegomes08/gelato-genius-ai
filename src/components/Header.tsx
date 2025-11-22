@@ -9,19 +9,23 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { useAuth } from "@/hooks/useAuth";
+import logo from "@/assets/logo-churrosteria.png";
 
 interface HeaderProps {
   title?: string;
 }
 
-export const Header = ({ title = "SorvetIA" }: HeaderProps) => {
+export const Header = ({ title = "Churrosteria" }: HeaderProps) => {
   const { user, signOut } = useAuth();
 
   return (
     <div className="flex items-center justify-between flex-1">
-      <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-        {title}
-      </h1>
+      <div className="flex items-center gap-3">
+        <img src={logo} alt="Churrosteria" className="h-8 w-8 rounded-full object-cover" />
+        <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+          {title}
+        </h1>
+      </div>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size="icon" className="rounded-full">

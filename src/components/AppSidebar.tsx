@@ -10,6 +10,7 @@ import {
   SidebarMenuButton,
   useSidebar,
 } from "@/components/ui/sidebar";
+import logo from "@/assets/logo-churrosteria.png";
 
 const navItems = [
   { to: "/", icon: Home, label: "Início" },
@@ -27,9 +28,18 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarContent>
         <div className="p-4 border-b">
-          <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            {open ? "SorvetIA" : "SI"}
-          </h1>
+          <div className="flex items-center gap-3">
+            <img 
+              src={logo} 
+              alt="Churrosteria" 
+              className="h-8 w-8 rounded-full object-cover flex-shrink-0" 
+            />
+            {open && (
+              <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                Churrosteria
+              </h1>
+            )}
+          </div>
         </div>
 
         <SidebarGroup>
