@@ -185,18 +185,21 @@ export function CloseComandaDialog({ open, onOpenChange, comanda }: CloseComanda
         });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["comandas-abertas"] });
+      // Invalidar apenas queries que não causam re-render do componente pai
       queryClient.invalidateQueries({ queryKey: ["sales"] });
       queryClient.invalidateQueries({ queryKey: ["financial_transactions"] });
       queryClient.invalidateQueries({ queryKey: ["products-active"] });
+      
+      // NÃO invalidar "comandas-abertas" aqui - será feito após decisão do cupom
       
       // Gerar cupom de fidelidade se tiver cliente e valor mínimo
       if (comanda.customer_id && total >= 50) {
         setLoyaltyCouponDialogOpen(true);
       } else {
-        // Toast quando não tem cupom
+        // Toast quando não tem cupom e invalida comandas-abertas agora
         toast.success("Comanda fechada com sucesso!");
         onOpenChange(false);
+        queryClient.invalidateQueries({ queryKey: ["comandas-abertas"] });
       }
     },
     onError: (error: any) => {
