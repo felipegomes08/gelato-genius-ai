@@ -6,7 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AddItemsDialog } from "./AddItemsDialog";
 import { CloseComandaDialog } from "./CloseComandaDialog";
-import { Clock, Plus, DollarSign, ShoppingBag, Gift } from "lucide-react";
+import { EditComandaDialog } from "./EditComandaDialog";
+import { DeleteComandaDialog } from "./DeleteComandaDialog";
+import { Clock, Plus, DollarSign, ShoppingBag, Gift, Pencil, Trash2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -17,6 +19,8 @@ interface ComandaCardProps {
 export function ComandaCard({ comanda }: ComandaCardProps) {
   const [addItemsOpen, setAddItemsOpen] = useState(false);
   const [closeComandaOpen, setCloseComandaOpen] = useState(false);
+  const [editComandaOpen, setEditComandaOpen] = useState(false);
+  const [deleteComandaOpen, setDeleteComandaOpen] = useState(false);
 
   // Buscar cupons do cliente se houver
   const { data: customerCoupons } = useQuery({
@@ -114,23 +118,45 @@ export function ComandaCard({ comanda }: ComandaCardProps) {
           </div>
 
           {/* Actions */}
-          <div className="flex gap-2 pt-2 border-t">
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex-1"
-              onClick={() => setAddItemsOpen(true)}
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              Adicionar
-            </Button>
-            <Button
-              size="sm"
-              className="flex-1"
-              onClick={() => setCloseComandaOpen(true)}
-            >
-              Fechar
-            </Button>
+          <div className="space-y-2 pt-2 border-t">
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1"
+                onClick={() => setAddItemsOpen(true)}
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Adicionar
+              </Button>
+              <Button
+                size="sm"
+                className="flex-1"
+                onClick={() => setCloseComandaOpen(true)}
+              >
+                Fechar
+              </Button>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1"
+                onClick={() => setEditComandaOpen(true)}
+              >
+                <Pencil className="h-4 w-4 mr-1" />
+                Editar
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                className="flex-1"
+                onClick={() => setDeleteComandaOpen(true)}
+              >
+                <Trash2 className="h-4 w-4 mr-1" />
+                Excluir
+              </Button>
+            </div>
           </div>
         </div>
       </Card>
@@ -144,6 +170,16 @@ export function ComandaCard({ comanda }: ComandaCardProps) {
       <CloseComandaDialog
         open={closeComandaOpen}
         onOpenChange={setCloseComandaOpen}
+        comanda={comanda}
+      />
+      <EditComandaDialog
+        open={editComandaOpen}
+        onOpenChange={setEditComandaOpen}
+        comanda={comanda}
+      />
+      <DeleteComandaDialog
+        open={deleteComandaOpen}
+        onOpenChange={setDeleteComandaOpen}
         comanda={comanda}
       />
     </>
