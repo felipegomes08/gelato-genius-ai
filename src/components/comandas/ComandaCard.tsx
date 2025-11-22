@@ -1,10 +1,12 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AddItemsDialog } from "./AddItemsDialog";
 import { CloseComandaDialog } from "./CloseComandaDialog";
-import { Clock, Plus, DollarSign, ShoppingBag } from "lucide-react";
+import { Clock, Plus, DollarSign, ShoppingBag, Gift } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -15,6 +17,26 @@ interface ComandaCardProps {
 export function ComandaCard({ comanda }: ComandaCardProps) {
   const [addItemsOpen, setAddItemsOpen] = useState(false);
   const [closeComandaOpen, setCloseComandaOpen] = useState(false);
+
+  // Buscar cupons do cliente se houver
+  const { data: customerCoupons } = useQuery({
+    queryKey: ["customer-coupons-preview", comanda.customer?.id],
+    queryFn: async () => {
+      if (!comanda.customer?.id) return [];
+      
+      const { data, error } = await supabase
+        .from("coupons")
+        .select("id")
+        .eq("customer_id", comanda.customer.id)
+        .eq("is_active", true)
+        .eq("is_used", false)
+        .gte("expire_at", new Date().toISOString());
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!comanda.customer?.id,
+  });
 
   // Calcular total correto a partir dos items
   const itemsCount = comanda.items?.length || 0;
@@ -46,8 +68,16 @@ export function ComandaCard({ comanda }: ComandaCardProps) {
                 {comanda.notes || "Comanda sem nome"}
               </div>
               {comanda.customer && (
-                <div className="text-sm text-muted-foreground">
-                  {comanda.customer.name}
+                <div className="flex items-center gap-2 mt-1">
+                  <div className="text-sm text-muted-foreground">
+                    {comanda.customer.name}
+                  </div>
+                  {customerCoupons && customerCoupons.length > 0 && (
+                    <Badge variant="secondary" className="gap-1 text-xs h-5">
+                      <Gift className="h-3 w-3" />
+                      {customerCoupons.length}
+                    </Badge>
+                  )}
                 </div>
               )}
             </div>
