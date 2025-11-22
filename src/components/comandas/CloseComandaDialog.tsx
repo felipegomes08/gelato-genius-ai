@@ -125,6 +125,7 @@ export function CloseComandaDialog({ open, onOpenChange, comanda }: CloseComanda
         .update({
           status: "completed",
           payment_method: paymentMethod!,
+          subtotal: subtotal,
           discount_amount: totalDiscount,
           total: total,
           coupon_id: selectedCoupon?.id || null,
@@ -320,6 +321,25 @@ export function CloseComandaDialog({ open, onOpenChange, comanda }: CloseComanda
                 {comanda.items?.length || 0} itens
               </div>
             </Card>
+
+            {/* Lista de itens consumidos */}
+            {comanda.items && comanda.items.length > 0 && (
+              <Card className="p-3">
+                <div className="text-sm font-medium mb-2">Itens Consumidos:</div>
+                <div className="space-y-1.5">
+                  {comanda.items.map((item: any) => (
+                    <div key={item.id} className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">
+                        {item.quantity}x {item.product_name}
+                      </span>
+                      <span className="font-medium">
+                        R$ {Number(item.subtotal).toFixed(2)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )}
 
             {/* Cupons disponíveis */}
             <CouponSelector
