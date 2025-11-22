@@ -11,6 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { SelectCustomerDialog } from "@/components/sales/SelectCustomerDialog";
 import { ManualDiscountDialog } from "@/components/sales/ManualDiscountDialog";
 import { LoyaltyCouponDialog } from "@/components/sales/LoyaltyCouponDialog";
+import { EditCouponMessageDialog } from "@/components/sales/EditCouponMessageDialog";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Search, Plus, Minus, X, User, Percent, Banknote, Smartphone, CreditCard, Sparkles, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
@@ -53,7 +54,13 @@ export default function Vendas() {
   const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
   const [discountDialogOpen, setDiscountDialogOpen] = useState(false);
   const [loyaltyCouponDialogOpen, setLoyaltyCouponDialogOpen] = useState(false);
+  const [editMessageDialogOpen, setEditMessageDialogOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  const [pendingWhatsAppData, setPendingWhatsAppData] = useState<{
+    phone: string;
+    message: string;
+  } | null>(null);
 
   const queryClient = useQueryClient();
 
@@ -362,14 +369,12 @@ export default function Vendas() {
           const generatedMessage = messageData?.message;
 
           if (generatedMessage) {
-            toast.success(`Cupom de R$ ${data.value} criado!`, {
-              description: "Clique abaixo para compartilhar via WhatsApp",
-              action: {
-                label: "📱 Compartilhar",
-                onClick: () => abrirWhatsApp(data.customerPhone!, generatedMessage),
-              },
-              duration: 10000,
+            setPendingWhatsAppData({
+              phone: data.customerPhone!,
+              message: generatedMessage,
             });
+            setEditMessageDialogOpen(true);
+            toast.success(`Cupom de R$ ${data.value} criado com sucesso!`);
           } else {
             toast.success(`Cupom ${data.code} de R$ ${data.value} criado com sucesso!`);
           }
@@ -750,6 +755,19 @@ export default function Vendas() {
         suggestedValue={getSuggestedCouponValue()}
         onConfirmWithCoupon={handleConfirmWithCoupon}
         onConfirmWithoutCoupon={handleConfirmWithoutCoupon}
+      />
+
+      <EditCouponMessageDialog
+        open={editMessageDialogOpen}
+        onOpenChange={setEditMessageDialogOpen}
+        initialMessage={pendingWhatsAppData?.message || ""}
+        customerPhone={pendingWhatsAppData?.phone || ""}
+        onConfirm={(editedMessage) => {
+          if (pendingWhatsAppData) {
+            abrirWhatsApp(pendingWhatsAppData.phone, editedMessage);
+            setPendingWhatsAppData(null);
+          }
+        }}
       />
     </div>
   );
