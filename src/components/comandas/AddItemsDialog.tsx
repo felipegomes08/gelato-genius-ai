@@ -24,13 +24,16 @@ interface AddItemsDialogProps {
 interface CartItem {
   id: string;
   name: string;
-  price: number;
+  price: number | null;
   quantity: number;
+  customPrice?: number;
 }
 
 export function AddItemsDialog({ open, onOpenChange, comanda }: AddItemsDialogProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [editingPrice, setEditingPrice] = useState<string | null>(null);
+  const [tempPrice, setTempPrice] = useState("");
   
   const queryClient = useQueryClient();
 
@@ -54,6 +57,21 @@ export function AddItemsDialog({ open, onOpenChange, comanda }: AddItemsDialogPr
   ) || [];
 
   const addToCart = (product: any) => {
+    // Se o produto não tiver preço, abre o diálogo de entrada manual
+    if (!product.price) {
+      const newItem: CartItem = {
+        id: product.id,
+        name: product.name,
+        price: null,
+        quantity: 1,
+        customPrice: 0,
+      };
+      setCart([...cart, newItem]);
+      setEditingPrice(product.id);
+      setTempPrice("");
+      return;
+    }
+
     const existingItem = cart.find((item) => item.id === product.id);
     if (existingItem) {
       setCart(cart.map((item) =>
@@ -81,21 +99,46 @@ export function AddItemsDialog({ open, onOpenChange, comanda }: AddItemsDialogPr
 
   const removeFromCart = (id: string) => {
     setCart(cart.filter((item) => item.id !== id));
+    if (editingPrice === id) {
+      setEditingPrice(null);
+    }
   };
 
-  const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const updateCustomPrice = (id: string, price: number) => {
+    setCart(cart.map((item) =>
+      item.id === id
+        ? { ...item, customPrice: price }
+        : item
+    ));
+    setEditingPrice(null);
+  };
+
+  const getItemPrice = (item: CartItem) => {
+    return item.price !== null ? item.price : (item.customPrice || 0);
+  };
+
+  const cartTotal = cart.reduce((sum, item) => sum + getItemPrice(item) * item.quantity, 0);
 
   const addItemsMutation = useMutation({
     mutationFn: async () => {
+      // Validar que todos os itens sem preço tenham preço customizado
+      const invalidItems = cart.filter(item => item.price === null && !item.customPrice);
+      if (invalidItems.length > 0) {
+        throw new Error("Defina o preço para todos os itens");
+      }
+
       // Adicionar itens à comanda
-      const saleItems = cart.map((item) => ({
-        sale_id: comanda.id,
-        product_id: item.id,
-        product_name: item.name,
-        unit_price: item.price,
-        quantity: item.quantity,
-        subtotal: item.price * item.quantity,
-      }));
+      const saleItems = cart.map((item) => {
+        const finalPrice = getItemPrice(item);
+        return {
+          sale_id: comanda.id,
+          product_id: item.id,
+          product_name: item.name,
+          unit_price: finalPrice,
+          quantity: item.quantity,
+          subtotal: finalPrice * item.quantity,
+        };
+      });
 
       const { error: itemsError } = await supabase
         .from("sale_items")
@@ -170,7 +213,11 @@ export function AddItemsDialog({ open, onOpenChange, comanda }: AddItemsDialogPr
                     {product.name}
                   </div>
                   <div className="text-primary font-bold">
-                    R$ {Number(product.price).toFixed(2)}
+                    {product.price ? (
+                      `R$ ${Number(product.price).toFixed(2)}`
+                    ) : (
+                      <span className="text-muted-foreground text-xs">Preço no peso</span>
+                    )}
                   </div>
                   {product.controls_stock && (
                     <Badge variant="outline" className="mt-2 text-xs">
@@ -205,6 +252,44 @@ export function AddItemsDialog({ open, onOpenChange, comanda }: AddItemsDialogPr
                       <X className="h-4 w-4" />
                     </Button>
                   </div>
+                  
+                  {/* Campo de preço customizado para produtos sem preço */}
+                  {item.price === null && editingPrice === item.id ? (
+                    <div className="mb-2">
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="Digite o preço (R$)"
+                        value={tempPrice}
+                        onChange={(e) => setTempPrice(e.target.value)}
+                        onBlur={() => {
+                          if (tempPrice && Number(tempPrice) > 0) {
+                            updateCustomPrice(item.id, Number(tempPrice));
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && tempPrice && Number(tempPrice) > 0) {
+                            updateCustomPrice(item.id, Number(tempPrice));
+                          }
+                        }}
+                        autoFocus
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                  ) : item.price === null && !item.customPrice ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mb-2 w-full text-xs"
+                      onClick={() => {
+                        setEditingPrice(item.id);
+                        setTempPrice("");
+                      }}
+                    >
+                      Definir Preço
+                    </Button>
+                  ) : null}
+
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Button
@@ -226,7 +311,11 @@ export function AddItemsDialog({ open, onOpenChange, comanda }: AddItemsDialogPr
                       </Button>
                     </div>
                     <div className="text-sm font-bold">
-                      R$ {(item.price * item.quantity).toFixed(2)}
+                      {item.price === null && !item.customPrice ? (
+                        <span className="text-muted-foreground">-</span>
+                      ) : (
+                        `R$ ${(getItemPrice(item) * item.quantity).toFixed(2)}`
+                      )}
                     </div>
                   </div>
                 </Card>
