@@ -185,7 +185,6 @@ export function CloseComandaDialog({ open, onOpenChange, comanda }: CloseComanda
         });
     },
     onSuccess: () => {
-      toast.success("Comanda fechada com sucesso!");
       queryClient.invalidateQueries({ queryKey: ["comandas-abertas"] });
       queryClient.invalidateQueries({ queryKey: ["sales"] });
       queryClient.invalidateQueries({ queryKey: ["financial_transactions"] });
@@ -195,6 +194,8 @@ export function CloseComandaDialog({ open, onOpenChange, comanda }: CloseComanda
       if (comanda.customer_id && total >= 50) {
         setLoyaltyCouponDialogOpen(true);
       } else {
+        // Toast quando não tem cupom
+        toast.success("Comanda fechada com sucesso!");
         onOpenChange(false);
       }
     },
@@ -267,7 +268,14 @@ export function CloseComandaDialog({ open, onOpenChange, comanda }: CloseComanda
         };
       } catch (error) {
         console.error("Erro ao gerar mensagem IA:", error);
-        // Retornar mensagem padrão se falhar
+        
+        // Verificar se tem telefone mesmo no erro
+        if (!comanda.customer?.phone) {
+          toast.warning("Cupom criado, mas cliente sem telefone cadastrado");
+          return null; // Não retorna dados de WhatsApp
+        }
+        
+        // Retornar mensagem padrão se falhar IA
         return {
           phone: comanda.customer.phone,
           message: `Olá ${comanda.customer?.name}! 🎉\n\nParabéns! Você ganhou um cupom de ${discountValue}% de desconto!\n\nCódigo: ${couponCode}\nVálido até: ${expireDate.toLocaleDateString('pt-BR')}\n\nVolte sempre! 😊`,
@@ -278,12 +286,17 @@ export function CloseComandaDialog({ open, onOpenChange, comanda }: CloseComanda
       queryClient.invalidateQueries({ queryKey: ["customer-coupons"] });
       
       if (data?.phone) {
+        // Tem telefone: abre dialog de editar mensagem
         setPendingWhatsAppData(data);
         setEditMessageDialogOpen(true);
+        setLoyaltyCouponDialogOpen(false);
+      } else {
+        // Não tem telefone: apenas fecha tudo
+        setLoyaltyCouponDialogOpen(false);
+        onOpenChange(false);
+        toast.success("Comanda fechada e cupom criado! (cliente sem telefone)");
+        queryClient.invalidateQueries({ queryKey: ["comandas-abertas"] });
       }
-      
-      setLoyaltyCouponDialogOpen(false);
-      onOpenChange(false);
     },
     onError: (error: any) => {
       console.error("Erro ao criar cupom:", error);
@@ -292,12 +305,28 @@ export function CloseComandaDialog({ open, onOpenChange, comanda }: CloseComanda
   });
 
   const handleConfirmWithCoupon = () => {
+    // Verificar telefone antes de criar cupom
+    if (!comanda.customer?.phone) {
+      toast.error("Cliente não possui telefone cadastrado");
+      setLoyaltyCouponDialogOpen(false);
+      onOpenChange(false);
+      toast.success("Comanda fechada com sucesso!");
+      queryClient.invalidateQueries({ queryKey: ["comandas-abertas"] });
+      return;
+    }
+    
     createLoyaltyCouponMutation.mutate(true);
   };
 
   const handleConfirmWithoutCoupon = () => {
     setLoyaltyCouponDialogOpen(false);
     onOpenChange(false);
+    
+    // Mostra toast final
+    toast.success("Comanda fechada com sucesso!");
+    
+    // Invalida queries
+    queryClient.invalidateQueries({ queryKey: ["comandas-abertas"] });
   };
 
   return (
@@ -423,7 +452,16 @@ export function CloseComandaDialog({ open, onOpenChange, comanda }: CloseComanda
 
       <EditCouponMessageDialog
         open={editMessageDialogOpen}
-        onOpenChange={setEditMessageDialogOpen}
+        onOpenChange={(open) => {
+          setEditMessageDialogOpen(open);
+          
+          // Se usuário cancelar, fecha tudo mesmo assim
+          if (!open) {
+            onOpenChange(false);
+            toast.success("Comanda fechada com sucesso!");
+            queryClient.invalidateQueries({ queryKey: ["comandas-abertas"] });
+          }
+        }}
         initialMessage={pendingWhatsAppData?.message || ""}
         customerPhone={pendingWhatsAppData?.phone || ""}
         onConfirm={(editedMessage) => {
@@ -432,6 +470,12 @@ export function CloseComandaDialog({ open, onOpenChange, comanda }: CloseComanda
             window.open(whatsappUrl, "_blank");
             setPendingWhatsAppData(null);
           }
+          
+          // Fecha tudo e mostra toast
+          setEditMessageDialogOpen(false);
+          onOpenChange(false);
+          toast.success("Comanda fechada com sucesso! 🎉");
+          queryClient.invalidateQueries({ queryKey: ["comandas-abertas"] });
         }}
       />
     </>
