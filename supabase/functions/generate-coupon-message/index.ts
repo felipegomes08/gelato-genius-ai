@@ -24,20 +24,21 @@ serve(async (req) => {
 
     const minPurchase = couponValue === 5 ? 30 : 50;
 
-    const prompt = `Crie UMA única mensagem de WhatsApp calorosa e empolgante para notificar ${customerName} que ganhou um cupom cashback na Churrosteria.
+    const prompt = `Gere APENAS UMA mensagem de WhatsApp para notificar ${customerName} sobre seu cupom cashback.
+
+ATENÇÃO: Retorne SOMENTE o texto da mensagem pronta, sem introduções, sem listas, sem "Opção 1/2/3", sem "Variação 1/2/3".
 
 Informações do cupom:
 - Valor: R$${couponValue},00
 - Validade: ${expiryDate}
-- Valor mínimo de compra: R$${minPurchase},00
+- Valor mínimo: R$${minPurchase},00
 
-IMPORTANTE: 
-- Retorne APENAS o texto da mensagem, sem títulos, numerações ou prefixos como "Variação"
-- Use um tom amigável e próximo
-- Inclua emojis relevantes: 🤎🎉✨🤤🩷🩵🏷️😍
-- Mencione que pode garantir outro cupom na próxima compra
+Requisitos da mensagem:
+- Tom amigável e próximo
+- Incluir emojis: 🤎🎉✨🤤🩷🩵🏷️😍
+- Mencionar que ganha outro cupom na próxima compra
 - Máximo 400 caracteres
-- Seja natural e varie o texto a cada chamada
+- Cada chamada deve gerar texto diferente, mas SEMPRE retorne só UMA mensagem
 
 Exemplo de formato (varie o conteúdo):
 "🏷️ CUPOM CASHBACK 
@@ -81,12 +82,28 @@ Te vejo em breve! 😍"`;
       throw new Error("Mensagem não gerada pela IA");
     }
 
-    // Limpar a mensagem: remover títulos de variação e pegar apenas a primeira seção
+    // Guardar original para fallback
+    const originalMessage = generatedMessage;
+
+    // Limpar introduções e cabeçalhos
     generatedMessage = generatedMessage
-      .replace(/\*\*Variação \d+:\*\*/gi, '')
-      .replace(/Variação \d+:/gi, '')
-      .split('\n\n**')[0] // Pegar apenas a primeira seção caso venham múltiplas
+      .replace(/^.*?(Aqui estão|Seguem|Veja|Confira).*?:/gim, '') // Remove headers
+      .replace(/\*\*Opção \d+:\*\*/gi, '') // Remove **Opção X:**
+      .replace(/Opção \d+:/gi, '') // Remove Opção X:
+      .replace(/\*\*Variação \d+:\*\*/gi, '') // Remove **Variação X:**
+      .replace(/Variação \d+:/gi, '') // Remove Variação X:
       .trim();
+
+    // Se houver múltiplas opções, pegar só a primeira
+    const opcao2Index = generatedMessage.search(/(\*\*)?Opção [2-9]:/i);
+    if (opcao2Index > -1) {
+      generatedMessage = generatedMessage.substring(0, opcao2Index).trim();
+    }
+
+    // Se ficou vazio após limpeza, usar original
+    if (!generatedMessage) {
+      generatedMessage = originalMessage.trim();
+    }
 
     console.log("Mensagem gerada com sucesso:", generatedMessage);
 
