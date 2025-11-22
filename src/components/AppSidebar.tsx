@@ -1,4 +1,4 @@
-import { Home, ShoppingCart, Package, DollarSign, Users, UserCircle } from "lucide-react";
+import { Home, ShoppingCart, Package, DollarSign, Users, UserCircle, ClipboardList } from "lucide-react";
 import { NavLink } from "./NavLink";
 import {
   Sidebar,
@@ -15,6 +15,7 @@ import logo from "@/assets/logo-churrosteria.png";
 const navItems = [
   { to: "/", icon: Home, label: "Início" },
   { to: "/vendas", icon: ShoppingCart, label: "Vendas" },
+  { to: "/comandas", icon: ClipboardList, label: "Comandas" },
   { to: "/produtos", icon: Package, label: "Produtos" },
   { to: "/financeiro", icon: DollarSign, label: "Financeiro" },
   { to: "/clientes", icon: UserCircle, label: "Clientes" },
