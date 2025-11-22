@@ -94,7 +94,7 @@ export function CloseComandaDialog({ open, onOpenChange, comanda }: CloseComanda
   const total = Math.max(0, subtotal - totalDiscount);
 
   const getSuggestedCouponValue = () => {
-    return total >= 100 ? 15 : 10;
+    return total >= 30 ? 10 : 5;
   };
 
   const closeComandaMutation = useMutation({
