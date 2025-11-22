@@ -297,6 +297,13 @@ export default function Vendas() {
     },
   });
 
+  const abrirWhatsApp = (phone: string, message: string) => {
+    const cleanPhone = phone.replace(/\D/g, '');
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappUrl = `https://wa.me/55${cleanPhone}?text=${encodedMessage}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
   const createLoyaltyCouponMutation = useMutation({
     mutationFn: async () => {
       if (!selectedCustomer) return;
@@ -304,10 +311,10 @@ export default function Vendas() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
       
-    const couponValue = getSuggestedCouponValue();
-    const code = `FIDELIDADE-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
-    const expireDate = new Date();
-    expireDate.setDate(expireDate.getDate() + 7);
+      const couponValue = getSuggestedCouponValue();
+      const code = `FIDELIDADE-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+      const expireDate = new Date();
+      expireDate.setDate(expireDate.getDate() + 7);
       
       const { error } = await supabase
         .from("coupons")
@@ -323,11 +330,56 @@ export default function Vendas() {
       
       if (error) throw error;
       
-      return { code, value: couponValue };
+      return { 
+        code, 
+        value: couponValue, 
+        expireDate: expireDate.toLocaleDateString('pt-BR'),
+        customerName: selectedCustomer.name,
+        customerPhone: selectedCustomer.phone,
+      };
     },
-    onSuccess: (data) => {
-      toast.success(`Cupom ${data?.code} de R$ ${data?.value} criado com sucesso!`);
+    onSuccess: async (data) => {
+      if (!data) return;
+
       queryClient.invalidateQueries({ queryKey: ["customer-coupons"] });
+
+      // Gerar mensagem via IA
+      if (data.customerPhone) {
+        try {
+          const { data: messageData, error: messageError } = await supabase.functions.invoke(
+            'generate-coupon-message',
+            {
+              body: {
+                customerName: data.customerName,
+                couponValue: data.value,
+                expiryDate: data.expireDate,
+              }
+            }
+          );
+
+          if (messageError) throw messageError;
+
+          const generatedMessage = messageData?.message;
+
+          if (generatedMessage) {
+            toast.success(`Cupom de R$ ${data.value} criado!`, {
+              description: "Clique abaixo para compartilhar via WhatsApp",
+              action: {
+                label: "📱 Compartilhar",
+                onClick: () => abrirWhatsApp(data.customerPhone!, generatedMessage),
+              },
+              duration: 10000,
+            });
+          } else {
+            toast.success(`Cupom ${data.code} de R$ ${data.value} criado com sucesso!`);
+          }
+        } catch (error) {
+          console.error("Erro ao gerar mensagem:", error);
+          toast.success(`Cupom ${data.code} de R$ ${data.value} criado com sucesso!`);
+        }
+      } else {
+        toast.success(`Cupom ${data.code} de R$ ${data.value} criado com sucesso!`);
+      }
     },
     onError: (error: Error) => {
       toast.error("Erro ao criar cupom: " + error.message);
