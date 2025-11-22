@@ -2,56 +2,93 @@ import { Header } from "@/components/Header";
 import { BottomNav } from "@/components/BottomNav";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TrendingUp, ShoppingCart, Package, AlertTriangle, Users, DollarSign } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { startOfDay, endOfDay, subDays, startOfMonth, endOfMonth, subMonths } from "date-fns";
+import { useState } from "react";
+
+type PeriodType = 'today' | '7days' | '30days' | 'month' | 'all';
 
 export default function Dashboard() {
-  // Query: Vendas de hoje
-  const { data: todaySales, isLoading: loadingTodaySales } = useQuery({
-    queryKey: ['sales', 'today'],
+  const [period, setPeriod] = useState<PeriodType>('today');
+
+  // Calcular datas baseado no período
+  const getDateRange = (periodType: PeriodType) => {
+    const now = new Date();
+    switch (periodType) {
+      case 'today':
+        return { start: startOfDay(now), end: endOfDay(now) };
+      case '7days':
+        return { start: startOfDay(subDays(now, 7)), end: endOfDay(now) };
+      case '30days':
+        return { start: startOfDay(subDays(now, 30)), end: endOfDay(now) };
+      case 'month':
+        return { start: startOfMonth(now), end: endOfMonth(now) };
+      case 'all':
+        return { start: new Date(2000, 0, 1), end: endOfDay(now) };
+    }
+  };
+
+  const getPreviousDateRange = (periodType: PeriodType) => {
+    const now = new Date();
+    switch (periodType) {
+      case 'today':
+        return { start: startOfDay(subDays(now, 1)), end: endOfDay(subDays(now, 1)) };
+      case '7days':
+        return { start: startOfDay(subDays(now, 14)), end: endOfDay(subDays(now, 7)) };
+      case '30days':
+        return { start: startOfDay(subDays(now, 60)), end: endOfDay(subDays(now, 30)) };
+      case 'month':
+        return { start: startOfMonth(subMonths(now, 1)), end: endOfMonth(subMonths(now, 1)) };
+      case 'all':
+        return { start: new Date(2000, 0, 1), end: new Date(2000, 0, 1) };
+    }
+  };
+
+  const dateRange = getDateRange(period);
+  const previousDateRange = getPreviousDateRange(period);
+
+  // Query: Vendas do período atual
+  const { data: currentSales, isLoading: loadingCurrentSales } = useQuery({
+    queryKey: ['sales', period, 'current'],
     queryFn: async () => {
-      const start = startOfDay(new Date());
-      const end = endOfDay(new Date());
       const { data } = await supabase
         .from('sales')
         .select('total, created_at')
-        .gte('created_at', start.toISOString())
-        .lte('created_at', end.toISOString())
+        .gte('created_at', dateRange.start.toISOString())
+        .lte('created_at', dateRange.end.toISOString())
         .eq('status', 'completed');
       return data || [];
     },
-    refetchInterval: 30000, // Atualiza a cada 30s
+    refetchInterval: 30000,
   });
 
-  // Query: Vendas de ontem (para comparação)
-  const { data: yesterdaySales } = useQuery({
-    queryKey: ['sales', 'yesterday'],
+  // Query: Vendas do período anterior (para comparação)
+  const { data: previousSales } = useQuery({
+    queryKey: ['sales', period, 'previous'],
     queryFn: async () => {
-      const start = startOfDay(subDays(new Date(), 1));
-      const end = endOfDay(subDays(new Date(), 1));
+      if (period === 'all') return [];
       const { data } = await supabase
         .from('sales')
         .select('total')
-        .gte('created_at', start.toISOString())
-        .lte('created_at', end.toISOString())
+        .gte('created_at', previousDateRange.start.toISOString())
+        .lte('created_at', previousDateRange.end.toISOString())
         .eq('status', 'completed');
       return data || [];
     },
   });
 
-  // Query: Itens vendidos hoje
-  const { data: todayItems, isLoading: loadingTodayItems } = useQuery({
-    queryKey: ['sale_items', 'today'],
+  // Query: Itens vendidos no período
+  const { data: currentItems, isLoading: loadingCurrentItems } = useQuery({
+    queryKey: ['sale_items', period],
     queryFn: async () => {
-      const start = startOfDay(new Date());
-      const end = endOfDay(new Date());
       const { data: sales } = await supabase
         .from('sales')
         .select('id')
-        .gte('created_at', start.toISOString())
-        .lte('created_at', end.toISOString())
+        .gte('created_at', dateRange.start.toISOString())
+        .lte('created_at', dateRange.end.toISOString())
         .eq('status', 'completed');
       
       if (!sales || sales.length === 0) return [];
@@ -67,15 +104,15 @@ export default function Dashboard() {
     refetchInterval: 30000,
   });
 
-  // Query: Top produtos (últimos 30 dias)
+  // Query: Top produtos no período
   const { data: topProducts, isLoading: loadingTopProducts } = useQuery({
-    queryKey: ['top_products'],
+    queryKey: ['top_products', period],
     queryFn: async () => {
-      const start = subDays(new Date(), 30);
       const { data: sales } = await supabase
         .from('sales')
         .select('id')
-        .gte('created_at', start.toISOString())
+        .gte('created_at', dateRange.start.toISOString())
+        .lte('created_at', dateRange.end.toISOString())
         .eq('status', 'completed');
       
       if (!sales || sales.length === 0) return [];
@@ -110,15 +147,15 @@ export default function Dashboard() {
     refetchInterval: 60000,
   });
 
-  // Query: Top clientes (últimos 30 dias)
+  // Query: Top clientes no período
   const { data: topCustomers, isLoading: loadingTopCustomers } = useQuery({
-    queryKey: ['top_customers'],
+    queryKey: ['top_customers', period],
     queryFn: async () => {
-      const start = subDays(new Date(), 30);
       const { data: sales } = await supabase
         .from('sales')
         .select('customer_id, total, customers(name)')
-        .gte('created_at', start.toISOString())
+        .gte('created_at', dateRange.start.toISOString())
+        .lte('created_at', dateRange.end.toISOString())
         .eq('status', 'completed')
         .not('customer_id', 'is', null);
       
@@ -162,77 +199,60 @@ export default function Dashboard() {
     refetchInterval: 60000,
   });
 
-  // Query: Vendas do mês
-  const { data: monthSales } = useQuery({
-    queryKey: ['sales', 'month'],
-    queryFn: async () => {
-      const start = startOfMonth(new Date());
-      const end = endOfMonth(new Date());
-      const { data } = await supabase
-        .from('sales')
-        .select('total')
-        .gte('created_at', start.toISOString())
-        .lte('created_at', end.toISOString())
-        .eq('status', 'completed');
-      return data || [];
-    },
-    refetchInterval: 60000,
-  });
-
-  // Query: Vendas do mês anterior
-  const { data: lastMonthSales } = useQuery({
-    queryKey: ['sales', 'last_month'],
-    queryFn: async () => {
-      const start = startOfMonth(subMonths(new Date(), 1));
-      const end = endOfMonth(subMonths(new Date(), 1));
-      const { data } = await supabase
-        .from('sales')
-        .select('total')
-        .gte('created_at', start.toISOString())
-        .lte('created_at', end.toISOString())
-        .eq('status', 'completed');
-      return data || [];
-    },
-  });
-
   // Cálculos
-  const todayRevenue = todaySales?.reduce((sum, sale) => sum + Number(sale.total), 0) || 0;
-  const yesterdayRevenue = yesterdaySales?.reduce((sum, sale) => sum + Number(sale.total), 0) || 0;
-  const revenueChange = yesterdayRevenue > 0 
-    ? ((todayRevenue - yesterdayRevenue) / yesterdayRevenue * 100).toFixed(0)
-    : todayRevenue > 0 ? "+100" : "0";
+  const currentRevenue = currentSales?.reduce((sum, sale) => sum + Number(sale.total), 0) || 0;
+  const previousRevenue = previousSales?.reduce((sum, sale) => sum + Number(sale.total), 0) || 0;
+  const revenueChange = period === 'all' 
+    ? "0"
+    : previousRevenue > 0 
+      ? ((currentRevenue - previousRevenue) / previousRevenue * 100).toFixed(0)
+      : currentRevenue > 0 ? "+100" : "0";
 
-  const todayProductsSold = todayItems?.reduce((sum, item) => sum + item.quantity, 0) || 0;
+  const currentProductsSold = currentItems?.reduce((sum, item) => sum + item.quantity, 0) || 0;
   
-  const todayAverageTicket = todaySales && todaySales.length > 0
-    ? todayRevenue / todaySales.length
+  const currentAverageTicket = currentSales && currentSales.length > 0
+    ? currentRevenue / currentSales.length
     : 0;
 
-  const monthRevenue = monthSales?.reduce((sum, sale) => sum + Number(sale.total), 0) || 0;
-  const lastMonthRevenue = lastMonthSales?.reduce((sum, sale) => sum + Number(sale.total), 0) || 0;
-  const monthChange = lastMonthRevenue > 0
-    ? ((monthRevenue - lastMonthRevenue) / lastMonthRevenue * 100).toFixed(0)
-    : monthRevenue > 0 ? "+100" : "0";
+  const getPeriodLabel = () => {
+    switch (period) {
+      case 'today': return 'Hoje';
+      case '7days': return 'Últimos 7 dias';
+      case '30days': return 'Últimos 30 dias';
+      case 'month': return 'Este mês';
+      case 'all': return 'Todo período';
+    }
+  };
+
+  const getComparisonLabel = () => {
+    if (period === 'all') return '';
+    switch (period) {
+      case 'today': return 'vs ontem';
+      case '7days': return 'vs 7 dias anteriores';
+      case '30days': return 'vs 30 dias anteriores';
+      case 'month': return 'vs mês anterior';
+    }
+  };
 
   const stats = [
     {
-      title: "Vendas Hoje",
-      value: loadingTodaySales ? "..." : `R$ ${todayRevenue.toFixed(2)}`,
-      change: `${revenueChange}%`,
+      title: `Vendas - ${getPeriodLabel()}`,
+      value: loadingCurrentSales ? "..." : `R$ ${currentRevenue.toFixed(2)}`,
+      change: period === 'all' ? 'Total' : `${revenueChange}% ${getComparisonLabel()}`,
       icon: ShoppingCart,
-      trend: Number(revenueChange) >= 0 ? "up" : "down",
+      trend: period === 'all' ? 'up' : Number(revenueChange) >= 0 ? "up" : "down",
     },
     {
       title: "Produtos Vendidos",
-      value: loadingTodayItems ? "..." : String(todayProductsSold),
-      change: "Hoje",
+      value: loadingCurrentItems ? "..." : String(currentProductsSold),
+      change: getPeriodLabel(),
       icon: Package,
       trend: "up",
     },
     {
       title: "Ticket Médio",
-      value: loadingTodaySales ? "..." : `R$ ${todayAverageTicket.toFixed(2)}`,
-      change: todaySales?.length ? `${todaySales.length} vendas` : "0 vendas",
+      value: loadingCurrentSales ? "..." : `R$ ${currentAverageTicket.toFixed(2)}`,
+      change: currentSales?.length ? `${currentSales.length} vendas` : "0 vendas",
       icon: TrendingUp,
       trend: "up",
     },
@@ -249,6 +269,20 @@ export default function Dashboard() {
       <Header title="Painel" />
       
       <main className="max-w-md mx-auto p-4 space-y-6">
+        {/* Period Filter */}
+        <Card className="shadow-sm">
+          <CardContent className="p-3">
+            <Tabs value={period} onValueChange={(v) => setPeriod(v as PeriodType)}>
+              <TabsList className="grid w-full grid-cols-5">
+                <TabsTrigger value="today" className="text-xs">Hoje</TabsTrigger>
+                <TabsTrigger value="7days" className="text-xs">7d</TabsTrigger>
+                <TabsTrigger value="30days" className="text-xs">30d</TabsTrigger>
+                <TabsTrigger value="month" className="text-xs">Mês</TabsTrigger>
+                <TabsTrigger value="all" className="text-xs">Tudo</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </CardContent>
+        </Card>
         {/* Stats Grid */}
         <div className="grid grid-cols-2 gap-4">
           {stats.map((stat) => (
@@ -287,7 +321,7 @@ export default function Dashboard() {
         <Card className="shadow-sm">
           <CardHeader>
             <CardTitle className="text-lg">Produtos Mais Vendidos</CardTitle>
-            <p className="text-xs text-muted-foreground">Últimos 30 dias</p>
+            <p className="text-xs text-muted-foreground">{getPeriodLabel()}</p>
           </CardHeader>
           <CardContent className="space-y-3">
             {loadingTopProducts ? (
@@ -313,7 +347,7 @@ export default function Dashboard() {
               ))
             ) : (
               <p className="text-sm text-muted-foreground text-center py-4">
-                Nenhuma venda nos últimos 30 dias
+                Nenhuma venda no período selecionado
               </p>
             )}
           </CardContent>
@@ -326,7 +360,7 @@ export default function Dashboard() {
               <Users className="h-5 w-5 text-primary" />
               Clientes que Mais Compraram
             </CardTitle>
-            <p className="text-xs text-muted-foreground">Últimos 30 dias</p>
+            <p className="text-xs text-muted-foreground">{getPeriodLabel()}</p>
           </CardHeader>
           <CardContent className="space-y-3">
             {loadingTopCustomers ? (
@@ -352,33 +386,35 @@ export default function Dashboard() {
               ))
             ) : (
               <p className="text-sm text-muted-foreground text-center py-4">
-                Nenhum cliente com compras nos últimos 30 dias
+                Nenhum cliente com compras no período selecionado
               </p>
             )}
           </CardContent>
         </Card>
 
-        {/* Resumo do Mês */}
+        {/* Resumo do Período */}
         <Card className="shadow-sm">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <DollarSign className="h-5 w-5 text-success" />
-              Resumo do Mês
+              Resumo - {getPeriodLabel()}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
               <div>
-                <p className="font-medium text-sm">Vendas do Mês</p>
+                <p className="font-medium text-sm">Total de Vendas</p>
                 <p className="text-xs text-muted-foreground">
-                  {monthSales?.length || 0} transações
+                  {currentSales?.length || 0} transações
                 </p>
               </div>
               <div className="text-right">
-                <p className="font-bold text-lg">R$ {monthRevenue.toFixed(2)}</p>
-                <p className={`text-xs font-medium ${Number(monthChange) >= 0 ? 'text-success' : 'text-destructive'}`}>
-                  {monthChange}% vs mês anterior
-                </p>
+                <p className="font-bold text-lg">R$ {currentRevenue.toFixed(2)}</p>
+                {period !== 'all' && (
+                  <p className={`text-xs font-medium ${Number(revenueChange) >= 0 ? 'text-success' : 'text-destructive'}`}>
+                    {revenueChange}% {getComparisonLabel()}
+                  </p>
+                )}
               </div>
             </div>
           </CardContent>
