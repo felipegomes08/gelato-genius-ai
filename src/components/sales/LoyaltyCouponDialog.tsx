@@ -44,13 +44,18 @@ export function LoyaltyCouponDialog({
             </div>
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel onClick={onConfirmWithoutCoupon}>
-            Não, obrigado
+        <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+          <AlertDialogCancel onClick={() => onOpenChange(false)}>
+            Cancelar
           </AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirmWithCoupon}>
-            Sim, criar cupom!
-          </AlertDialogAction>
+          <div className="flex gap-2 flex-1 sm:flex-initial">
+            <AlertDialogCancel onClick={onConfirmWithoutCoupon} className="flex-1">
+              Não, obrigado
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={onConfirmWithCoupon} className="flex-1">
+              Sim, criar cupom!
+            </AlertDialogAction>
+          </div>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
