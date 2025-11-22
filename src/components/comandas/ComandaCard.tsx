@@ -16,8 +16,11 @@ export function ComandaCard({ comanda }: ComandaCardProps) {
   const [addItemsOpen, setAddItemsOpen] = useState(false);
   const [closeComandaOpen, setCloseComandaOpen] = useState(false);
 
+  // Calcular total correto a partir dos items
   const itemsCount = comanda.items?.length || 0;
-  const total = Number(comanda.total) || 0;
+  const total = comanda.items?.reduce((sum: number, item: any) => {
+    return sum + (Number(item.subtotal) || 0);
+  }, 0) || 0;
   
   const timeOpen = formatDistanceToNow(new Date(comanda.created_at), {
     addSuffix: false,

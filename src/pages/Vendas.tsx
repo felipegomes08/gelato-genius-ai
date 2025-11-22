@@ -11,8 +11,9 @@ import { SelectCustomerDialog } from "@/components/sales/SelectCustomerDialog";
 import { ManualDiscountDialog } from "@/components/sales/ManualDiscountDialog";
 import { LoyaltyCouponDialog } from "@/components/sales/LoyaltyCouponDialog";
 import { EditCouponMessageDialog } from "@/components/sales/EditCouponMessageDialog";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Search, Plus, Minus, X, User, Percent, Banknote, Smartphone, CreditCard, Sparkles, ShoppingCart } from "lucide-react";
+import { CheckoutSummary } from "@/components/sales/CheckoutSummary";
+import { PaymentMethodSelector } from "@/components/sales/PaymentMethodSelector";
+import { Search, Plus, Minus, X, User, Percent, Sparkles, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 
 interface CartItem {
@@ -167,13 +168,6 @@ export default function Vendas() {
     pix: "PIX",
     debit: "Cartão Débito",
     credit: "Cartão Crédito",
-  };
-
-  const paymentMethodIcons = {
-    cash: Banknote,
-    pix: Smartphone,
-    debit: CreditCard,
-    credit: CreditCard,
   };
 
   // Confirmar venda
@@ -659,74 +653,18 @@ export default function Vendas() {
               </Card>
             )}
 
-            {/* Payment Method Toggle */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Forma de Pagamento</label>
-              <ToggleGroup
-                type="single"
-                value={paymentMethod || ""}
-                onValueChange={(value) => {
-                  if (value) {
-                    setPaymentMethod(value as "cash" | "pix" | "debit" | "credit");
-                  }
-                }}
-                className="grid grid-cols-2 gap-2"
-              >
-                <ToggleGroupItem
-                  value="cash"
-                  className="h-16 flex flex-col gap-1 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
-                >
-                  <Banknote className="h-5 w-5" />
-                  <span className="text-xs">Dinheiro</span>
-                </ToggleGroupItem>
+            {/* Payment Method Selector */}
+            <PaymentMethodSelector
+              value={paymentMethod}
+              onChange={setPaymentMethod}
+            />
 
-                <ToggleGroupItem
-                  value="pix"
-                  className="h-16 flex flex-col gap-1 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
-                >
-                  <Smartphone className="h-5 w-5" />
-                  <span className="text-xs">PIX</span>
-                </ToggleGroupItem>
-
-                <ToggleGroupItem
-                  value="debit"
-                  className="h-16 flex flex-col gap-1 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
-                >
-                  <CreditCard className="h-5 w-5" />
-                  <span className="text-xs">Débito</span>
-                </ToggleGroupItem>
-
-                <ToggleGroupItem
-                  value="credit"
-                  className="h-16 flex flex-col gap-1 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
-                >
-                  <CreditCard className="h-5 w-5" />
-                  <span className="text-xs">Crédito</span>
-                </ToggleGroupItem>
-              </ToggleGroup>
-            </div>
-
-            {/* Total */}
-            <Card className="p-4 bg-primary/5 border-primary/20">
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Subtotal</span>
-                  <span>R$ {subtotal.toFixed(2)}</span>
-                </div>
-                {(couponDiscount > 0 || manualDiscountAmount > 0) && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Desconto Total</span>
-                    <span className="text-destructive">
-                      -R$ {totalDiscount.toFixed(2)}
-                    </span>
-                  </div>
-                )}
-                <div className="flex justify-between text-xl font-bold pt-2 border-t">
-                  <span>Total</span>
-                  <span className="text-primary">R$ {total.toFixed(2)}</span>
-                </div>
-              </div>
-            </Card>
+            {/* Checkout Summary */}
+            <CheckoutSummary
+              subtotal={subtotal}
+              couponDiscount={couponDiscount}
+              manualDiscountAmount={manualDiscountAmount}
+            />
 
             <Button
               onClick={handleConfirmSale}
