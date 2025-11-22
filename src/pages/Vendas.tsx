@@ -445,7 +445,7 @@ export default function Vendas() {
         </div>
 
         {/* Products Grid & Cart - Grouped for better spacing */}
-        <div className="space-y-2">
+        <div className="space-y-1">
           {/* Products Grid - Always Visible */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
