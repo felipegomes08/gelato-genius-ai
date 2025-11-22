@@ -432,7 +432,7 @@ export default function Vendas() {
     <div className="min-h-screen bg-background pb-20">
       <Header title="PDV - Vendas" />
 
-      <main className="max-w-md mx-auto p-4 space-y-4">
+      <main className="max-w-md mx-auto p-4 space-y-3">
         {/* Search */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -444,118 +444,121 @@ export default function Vendas() {
           />
         </div>
 
-        {/* Products Grid - Always Visible */}
+        {/* Products Grid & Cart - Grouped for better spacing */}
         <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <h2 className="font-semibold">Produtos</h2>
-            <span className="text-sm text-muted-foreground">
-              {filteredProducts.length} disponíveis
-            </span>
-          </div>
-          
-          {isLoading ? (
-            <Card className="p-8 text-center">
-              <p className="text-muted-foreground">Carregando produtos...</p>
-            </Card>
-          ) : filteredProducts.length > 0 ? (
-            <ScrollArea className="h-64">
-              <div className="grid grid-cols-2 gap-2 pr-4">
-                {filteredProducts.map((product) => (
-                  <button
-                    key={product.id}
-                    onClick={() => addToCart(product)}
-                    className="group relative flex flex-col gap-2 p-3 rounded-lg border bg-card hover:bg-accent/50 hover:border-primary/50 transition-all text-left"
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm leading-tight line-clamp-2">
-                          {product.name}
-                        </p>
-                        {product.controls_stock && (
-                          <Badge 
-                            variant={product.current_stock && product.current_stock > 0 ? "secondary" : "destructive"}
-                            className="mt-1 text-xs h-5"
-                          >
-                            Est: {product.current_stock || 0}
-                          </Badge>
-                        )}
+          {/* Products Grid - Always Visible */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold">Produtos</h2>
+              <span className="text-sm text-muted-foreground">
+                {filteredProducts.length} disponíveis
+              </span>
+            </div>
+            
+            {isLoading ? (
+              <Card className="p-8 text-center">
+                <p className="text-muted-foreground">Carregando produtos...</p>
+              </Card>
+            ) : filteredProducts.length > 0 ? (
+              <ScrollArea className="h-64">
+                <div className="grid grid-cols-2 gap-2 pr-4">
+                  {filteredProducts.map((product) => (
+                    <button
+                      key={product.id}
+                      onClick={() => addToCart(product)}
+                      className="group relative flex flex-col gap-2 p-3 rounded-lg border bg-card hover:bg-accent/50 hover:border-primary/50 transition-all text-left"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm leading-tight line-clamp-2">
+                            {product.name}
+                          </p>
+                          {product.controls_stock && (
+                            <Badge 
+                              variant={product.current_stock && product.current_stock > 0 ? "secondary" : "destructive"}
+                              className="mt-1 text-xs h-5"
+                            >
+                              Est: {product.current_stock || 0}
+                            </Badge>
+                          )}
+                        </div>
+                        <ShoppingCart className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
                       </div>
-                      <ShoppingCart className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                      <p className="font-bold text-primary">
+                        R$ {product.price.toFixed(2)}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              </ScrollArea>
+            ) : (
+              <Card className="p-8 text-center">
+                <p className="text-muted-foreground">
+                  {searchTerm ? "Nenhum produto encontrado" : "Nenhum produto cadastrado"}
+                </p>
+              </Card>
+            )}
+          </div>
+
+          {/* Cart */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold">Carrinho</h2>
+              <span className="text-sm text-muted-foreground">
+                {cart.length} {cart.length === 1 ? "item" : "itens"}
+              </span>
+            </div>
+
+            {cart.length === 0 ? (
+              <Card className="p-8 text-center">
+                <p className="text-muted-foreground">Nenhum produto adicionado</p>
+              </Card>
+            ) : (
+              <div className="space-y-2">
+                {cart.map((item) => (
+                  <Card key={item.id} className="p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium text-sm flex-1">{item.name}</span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeFromCart(item.id)}
+                        className="h-8 w-8"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
                     </div>
-                    <p className="font-bold text-primary">
-                      R$ {product.price.toFixed(2)}
-                    </p>
-                  </button>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => updateQuantity(item.id, -1)}
+                          className="h-8 w-8"
+                        >
+                          <Minus className="h-3 w-3" />
+                        </Button>
+                        <span className="w-8 text-center font-semibold">
+                          {item.quantity}
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => updateQuantity(item.id, 1)}
+                          className="h-8 w-8"
+                        >
+                          <Plus className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      <span className="font-semibold">
+                        R$ {(item.price * item.quantity).toFixed(2)}
+                      </span>
+                    </div>
+                  </Card>
                 ))}
               </div>
-            </ScrollArea>
-          ) : (
-            <Card className="p-8 text-center">
-              <p className="text-muted-foreground">
-                {searchTerm ? "Nenhum produto encontrado" : "Nenhum produto cadastrado"}
-              </p>
-            </Card>
-          )}
-        </div>
-
-        {/* Cart */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="font-semibold">Carrinho</h2>
-            <span className="text-sm text-muted-foreground">
-              {cart.length} {cart.length === 1 ? "item" : "itens"}
-            </span>
+            )}
           </div>
-
-          {cart.length === 0 ? (
-            <Card className="p-8 text-center">
-              <p className="text-muted-foreground">Nenhum produto adicionado</p>
-            </Card>
-          ) : (
-            <div className="space-y-2">
-              {cart.map((item) => (
-                <Card key={item.id} className="p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium text-sm flex-1">{item.name}</span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeFromCart(item.id)}
-                      className="h-8 w-8"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => updateQuantity(item.id, -1)}
-                        className="h-8 w-8"
-                      >
-                        <Minus className="h-3 w-3" />
-                      </Button>
-                      <span className="w-8 text-center font-semibold">
-                        {item.quantity}
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => updateQuantity(item.id, 1)}
-                        className="h-8 w-8"
-                      >
-                        <Plus className="h-3 w-3" />
-                      </Button>
-                    </div>
-                    <span className="font-semibold">
-                      R$ {(item.price * item.quantity).toFixed(2)}
-                    </span>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          )}
         </div>
 
         {/* Actions */}
