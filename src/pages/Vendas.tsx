@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
+
 import { SelectCustomerDialog } from "@/components/sales/SelectCustomerDialog";
 import { ManualDiscountDialog } from "@/components/sales/ManualDiscountDialog";
 import { LoyaltyCouponDialog } from "@/components/sales/LoyaltyCouponDialog";
@@ -444,8 +444,8 @@ export default function Vendas() {
           />
         </div>
 
-        {/* Products Grid & Cart - Grouped for better spacing */}
-        <div className="space-y-1">
+        {/* Products Grid & Cart - Grouped for zero spacing */}
+        <div className="space-y-0">
           {/* Products Grid - Always Visible */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
@@ -460,13 +460,13 @@ export default function Vendas() {
                 <p className="text-muted-foreground">Carregando produtos...</p>
               </Card>
             ) : filteredProducts.length > 0 ? (
-              <ScrollArea className="h-64">
-                <div className="grid grid-cols-2 gap-2 pr-4">
+              <div className="overflow-x-auto -mx-1 pb-1">
+                <div className="flex gap-2 px-1">
                   {filteredProducts.map((product) => (
                     <button
                       key={product.id}
                       onClick={() => addToCart(product)}
-                      className="group relative flex flex-col gap-2 p-3 rounded-lg border bg-card hover:bg-accent/50 hover:border-primary/50 transition-all text-left"
+                      className="group relative flex flex-col gap-2 p-3 rounded-lg border bg-card hover:bg-accent/50 hover:border-primary/50 transition-all text-left min-w-[150px]"
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
@@ -490,7 +490,7 @@ export default function Vendas() {
                     </button>
                   ))}
                 </div>
-              </ScrollArea>
+              </div>
             ) : (
               <Card className="p-8 text-center">
                 <p className="text-muted-foreground">
