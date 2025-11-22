@@ -19,8 +19,8 @@ const productSchema = z.object({
     .min(1, "Nome é obrigatório")
     .max(100, "Nome deve ter no máximo 100 caracteres"),
   price: z.string()
-    .min(1, "Preço é obrigatório")
-    .refine((val) => !isNaN(Number(val)) && Number(val) > 0, "Preço deve ser maior que zero"),
+    .optional()
+    .refine((val) => !val || (!isNaN(Number(val)) && Number(val) > 0), "Preço deve ser maior que zero"),
   category: z.string()
     .trim()
     .min(1, "Categoria é obrigatória")
@@ -74,7 +74,7 @@ export function AddProductDialog({ open, onOpenChange }: AddProductDialogProps) 
 
       const { error } = await supabase.from("products").insert({
         name: data.name,
-        price: Number(data.price),
+        price: data.price ? Number(data.price) : null,
         category: data.category,
         description: data.description || null,
         controls_stock: data.controls_stock,
@@ -123,12 +123,12 @@ export function AddProductDialog({ open, onOpenChange }: AddProductDialogProps) 
                 name="price"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Preço (R$)</FormLabel>
+                    <FormLabel>Preço (R$) - Opcional</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
                         step="0.01"
-                        placeholder="0.00"
+                        placeholder="Deixe vazio para produtos no peso"
                         {...field}
                       />
                     </FormControl>

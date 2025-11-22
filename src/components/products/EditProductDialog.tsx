@@ -44,7 +44,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
   useEffect(() => {
     if (product) {
       setName(product.name);
-      setPrice(product.price.toString());
+      setPrice(product.price ? product.price.toString() : "");
       setCategory(product.category);
       setDescription(product.description || "");
       setControlsStock(product.controls_stock);
@@ -64,7 +64,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
         .from("products")
         .update({
           name,
-          price: parseFloat(price),
+          price: price ? parseFloat(price) : null,
           category,
           description: description || null,
           controls_stock: controlsStock,
@@ -113,7 +113,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="edit-price">Preço (R$) *</Label>
+            <Label htmlFor="edit-price">Preço (R$) - Opcional</Label>
             <Input
               id="edit-price"
               type="number"
@@ -121,8 +121,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
               min="0"
               value={price}
               onChange={(e) => setPrice(e.target.value)}
-              placeholder="0.00"
-              required
+              placeholder="Deixe vazio para produtos no peso"
             />
           </div>
 
