@@ -338,6 +338,11 @@ export function SelectCustomerDialog({
                 onClick={() => {
                   setSelectedCustomerId(customer.id);
                   setSelectedCouponId(null);
+                  
+                  // Se está em modo embedded sem cupons, seleciona automaticamente
+                  if (embedded && !showCoupons) {
+                    onSelectCustomer(customer);
+                  }
                 }}
               >
                 <div className="flex items-center justify-between">
