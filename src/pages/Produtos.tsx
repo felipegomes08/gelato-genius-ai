@@ -15,7 +15,7 @@ import { EditProductDialog } from "@/components/products/EditProductDialog";
 interface Product {
   id: string;
   name: string;
-  price: number;
+  price: number | null;
   current_stock: number | null;
   controls_stock: boolean;
   category: string;
@@ -142,7 +142,11 @@ export default function Produtos() {
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-lg font-bold text-primary">
-                        R$ {product.price.toFixed(2)}
+                        {product.price ? (
+                          `R$ ${product.price.toFixed(2)}`
+                        ) : (
+                          <span className="text-sm text-muted-foreground">Preço no peso</span>
+                        )}
                       </span>
                       <Button 
                         variant="ghost" 
