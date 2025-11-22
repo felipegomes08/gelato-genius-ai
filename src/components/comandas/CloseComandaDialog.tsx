@@ -240,7 +240,7 @@ export function CloseComandaDialog({ open, onOpenChange, comanda }: CloseComanda
         .insert({
           customer_id: comanda.customer_id,
           code: couponCode,
-          discount_type: "percentage",
+          discount_type: "fixed",
           discount_value: discountValue,
           expire_at: expireDate.toISOString(),
           created_by: user.id,
