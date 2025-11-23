@@ -79,7 +79,7 @@ export default function Vendas() {
   });
 
   const filteredProducts = products?.filter((p) =>
-    p.name.toLowerCase().includes(searchTerm.toLowerCase())
+    p.name.toLowerCase().includes(searchTerm.toLowerCase()) && p.price !== null
   ) || [];
 
   const addToCart = (product: typeof products[0]) => {
