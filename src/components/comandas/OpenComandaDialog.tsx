@@ -41,9 +41,9 @@ interface Coupon {
 }
 
 export function OpenComandaDialog({ open, onOpenChange }: OpenComandaDialogProps) {
-  const [step, setStep] = useState<1 | 2>(1);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [notes, setNotes] = useState("");
+  const [showCustomerSelect, setShowCustomerSelect] = useState(false);
   
   const queryClient = useQueryClient();
 
@@ -73,11 +73,16 @@ export function OpenComandaDialog({ open, onOpenChange }: OpenComandaDialogProps
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
+      // Validação: precisa ter cliente OU descrição
+      if (!selectedCustomer && !notes.trim()) {
+        throw new Error("Informe um cliente ou uma descrição para a comanda");
+      }
+
       const { data: sale, error: saleError } = await supabase
         .from("sales")
         .insert({
           status: "open",
-          customer_id: selectedCustomer!.id,
+          customer_id: selectedCustomer?.id || null,
           notes: notes.trim() || null,
           payment_method: "pending",
           subtotal: 0,
@@ -92,7 +97,10 @@ export function OpenComandaDialog({ open, onOpenChange }: OpenComandaDialogProps
       return sale;
     },
     onSuccess: () => {
-      toast.success(`Comanda aberta para ${selectedCustomer?.name}!`);
+      const successMsg = selectedCustomer 
+        ? `Comanda aberta para ${selectedCustomer.name}!`
+        : `Comanda aberta: ${notes}`;
+      toast.success(successMsg);
       queryClient.invalidateQueries({ queryKey: ["comandas-abertas"] });
       resetForm();
       onOpenChange(false);
@@ -104,18 +112,25 @@ export function OpenComandaDialog({ open, onOpenChange }: OpenComandaDialogProps
   });
 
   const resetForm = () => {
-    setStep(1);
     setSelectedCustomer(null);
     setNotes("");
+    setShowCustomerSelect(false);
   };
 
   const handleSelectCustomer = (customer: Customer) => {
     setSelectedCustomer(customer);
-    setStep(2);
+    setShowCustomerSelect(false);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validação
+    if (!selectedCustomer && !notes.trim()) {
+      toast.error("Informe um cliente ou uma descrição para a comanda");
+      return;
+    }
+    
     openComandaMutation.mutate();
   };
 
@@ -126,110 +141,113 @@ export function OpenComandaDialog({ open, onOpenChange }: OpenComandaDialogProps
     }}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>
-            {step === 1 ? "Nova Comanda - Selecionar Cliente" : "Nova Comanda - Identificação"}
-          </DialogTitle>
+          <DialogTitle>Nova Comanda</DialogTitle>
         </DialogHeader>
 
-        {/* Etapa 1: Seleção de Cliente */}
-        {step === 1 && (
-          <div className="space-y-4">
-            <SelectCustomerDialog
-              open={true}
-              onOpenChange={() => {}}
-              onSelectCustomer={handleSelectCustomer}
-              onCreateNewCustomer={handleSelectCustomer}
-              embedded={true}
-              showCoupons={false}
-            />
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Cliente (Opcional) */}
+          <div className="space-y-3">
+            <Label>Cliente (opcional)</Label>
             
-            <div className="flex gap-2 pt-4 border-t">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  resetForm();
-                  onOpenChange(false);
-                }}
-                className="flex-1"
-              >
-                Cancelar
-              </Button>
-              <Button
-                onClick={() => {
-                  if (selectedCustomer) {
-                    setStep(2);
-                  } else {
-                    toast.error("Selecione um cliente");
-                  }
-                }}
-                disabled={!selectedCustomer}
-                className="flex-1"
-              >
-                Continuar
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* Etapa 2: Identificação da Comanda */}
-        {step === 2 && (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Cliente Selecionado */}
-            <Card className="p-3 bg-muted/30">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">{selectedCustomer?.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {selectedCustomer?.phone || "Sem telefone"}
-                  </p>
+            {selectedCustomer ? (
+              <Card className="p-3 bg-muted/30">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">{selectedCustomer.name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedCustomer.phone || "Sem telefone"}
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedCustomer(null)}
+                  >
+                    Remover
+                  </Button>
                 </div>
-                <Badge variant="outline">Cliente selecionado</Badge>
-              </div>
-            </Card>
-
-            {/* Preview de Cupons Disponíveis */}
-            {customerCoupons && customerCoupons.length > 0 && (
-              <Alert>
-                <Gift className="h-4 w-4" />
-                <AlertDescription>
-                  Este cliente possui <strong>{customerCoupons.length} cupom(ns) disponível(is)</strong> para usar no fechamento da comanda
-                </AlertDescription>
-              </Alert>
-            )}
-
-            {/* Identificação da Comanda */}
-            <div className="space-y-2">
-              <Label htmlFor="notes">Identificação da Comanda (opcional)</Label>
-              <Textarea
-                id="notes"
-                placeholder="Ex: Mesa 5, Balcão 3, Cliente da camisa azul..."
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                rows={3}
-              />
-              <p className="text-xs text-muted-foreground">
-                Use para identificar a comanda (mesa, balcão, etc)
-              </p>
-            </div>
-
-            <DialogFooter>
+              </Card>
+            ) : (
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setStep(1)}
-                disabled={openComandaMutation.isPending}
+                onClick={() => setShowCustomerSelect(true)}
+                className="w-full"
               >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Voltar
+                Selecionar Cliente
               </Button>
-              <Button type="submit" disabled={openComandaMutation.isPending}>
-                {openComandaMutation.isPending && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                )}
-                Abrir Comanda
-              </Button>
-            </DialogFooter>
-          </form>
+            )}
+
+            {/* Preview de Cupons Disponíveis */}
+            {selectedCustomer && customerCoupons && customerCoupons.length > 0 && (
+              <Alert>
+                <Gift className="h-4 w-4" />
+                <AlertDescription>
+                  Este cliente possui <strong>{customerCoupons.length} cupom(ns) disponível(is)</strong> para usar no fechamento
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
+
+          {/* Descrição/Identificação */}
+          <div className="space-y-2">
+            <Label htmlFor="notes">
+              Descrição da Comanda {!selectedCustomer && <span className="text-destructive">*</span>}
+            </Label>
+            <Textarea
+              id="notes"
+              placeholder="Ex: Mesa 5, Balcão 3, Cliente da camisa azul..."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={3}
+              required={!selectedCustomer}
+            />
+            <p className="text-xs text-muted-foreground">
+              {selectedCustomer 
+                ? "Identificação adicional para a comanda (opcional)"
+                : "Obrigatório quando não há cliente selecionado"}
+            </p>
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                resetForm();
+                onOpenChange(false);
+              }}
+              disabled={openComandaMutation.isPending}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={openComandaMutation.isPending}>
+              {openComandaMutation.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Abrir Comanda
+            </Button>
+          </DialogFooter>
+        </form>
+
+        {/* Dialog de Seleção de Cliente */}
+        {showCustomerSelect && (
+          <Dialog open={showCustomerSelect} onOpenChange={setShowCustomerSelect}>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Selecionar Cliente</DialogTitle>
+              </DialogHeader>
+              <SelectCustomerDialog
+                open={true}
+                onOpenChange={() => {}}
+                onSelectCustomer={handleSelectCustomer}
+                onCreateNewCustomer={handleSelectCustomer}
+                embedded={true}
+                showCoupons={false}
+              />
+            </DialogContent>
+          </Dialog>
         )}
       </DialogContent>
     </Dialog>
