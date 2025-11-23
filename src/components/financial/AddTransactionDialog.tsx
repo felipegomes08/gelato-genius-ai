@@ -61,6 +61,7 @@ const formSchema = z.object({
       (val) => !isNaN(Number(val)) && Number(val) > 0,
       "Valor deve ser maior que zero"
     ),
+  payment_method: z.string().min(1, "Forma de pagamento é obrigatória"),
   transaction_date: z.date({
     required_error: "Data é obrigatória",
   }),
@@ -107,6 +108,7 @@ export function AddTransactionDialog({
       description: "",
       category: "",
       amount: "",
+      payment_method: "",
       transaction_date: new Date(),
       notes: "",
     },
@@ -132,6 +134,7 @@ export function AddTransactionDialog({
         description: values.description,
         category: values.category,
         amount: Number(values.amount),
+        payment_method: values.payment_method,
         transaction_date: values.transaction_date.toISOString(),
         notes: values.notes || null,
         created_by: user.id,
@@ -254,6 +257,31 @@ export function AddTransactionDialog({
                       {...field}
                     />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="payment_method"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Forma de Pagamento</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione a forma" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="cash">Dinheiro</SelectItem>
+                      <SelectItem value="pix">PIX</SelectItem>
+                      <SelectItem value="debit">Débito</SelectItem>
+                      <SelectItem value="credit">Crédito</SelectItem>
+                      <SelectItem value="N/A">N/A</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
