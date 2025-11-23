@@ -19,10 +19,11 @@ import { toast } from "sonner";
 interface CartItem {
   id: string;
   name: string;
-  price: number;
+  price: number | null;
   quantity: number;
   controls_stock: boolean;
   current_stock: number | null;
+  customPrice?: number;
 }
 
 interface Customer {
@@ -56,6 +57,8 @@ export default function Vendas() {
   const [loyaltyCouponDialogOpen, setLoyaltyCouponDialogOpen] = useState(false);
   const [editMessageDialogOpen, setEditMessageDialogOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [editingPriceId, setEditingPriceId] = useState<string | null>(null);
+  const [tempPrice, setTempPrice] = useState<string>("");
   
   const [pendingWhatsAppData, setPendingWhatsAppData] = useState<{
     phone: string;
@@ -79,7 +82,7 @@ export default function Vendas() {
   });
 
   const filteredProducts = products?.filter((p) =>
-    p.name.toLowerCase().includes(searchTerm.toLowerCase()) && p.price !== null
+    p.name.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
 
   const addToCart = (product: typeof products[0]) => {
@@ -103,14 +106,24 @@ export default function Vendas() {
         )
       );
     } else {
-      setCart([...cart, { 
+      const newItem: CartItem = { 
         id: product.id,
         name: product.name,
         price: product.price,
         quantity: 1,
         controls_stock: product.controls_stock,
         current_stock: product.current_stock,
-      }]);
+      };
+
+      // Se não tem preço, inicia customPrice como 0 e abre o editor
+      if (product.price === null) {
+        newItem.customPrice = 0;
+        setCart([...cart, newItem]);
+        setEditingPriceId(product.id);
+        setTempPrice("");
+      } else {
+        setCart([...cart, newItem]);
+      }
     }
   };
 
@@ -139,10 +152,35 @@ export default function Vendas() {
 
   const removeFromCart = (id: string) => {
     setCart(cart.filter((item) => item.id !== id));
+    if (editingPriceId === id) {
+      setEditingPriceId(null);
+      setTempPrice("");
+    }
+  };
+
+  const updateCustomPrice = (id: string) => {
+    const priceValue = parseFloat(tempPrice);
+    if (isNaN(priceValue) || priceValue <= 0) {
+      toast.error("Digite um valor válido");
+      return;
+    }
+
+    setCart(cart.map((item) =>
+      item.id === id
+        ? { ...item, customPrice: priceValue }
+        : item
+    ));
+    setEditingPriceId(null);
+    setTempPrice("");
+    toast.success("Preço definido com sucesso!");
+  };
+
+  const getItemPrice = (item: CartItem): number => {
+    return item.price !== null ? item.price : (item.customPrice || 0);
   };
 
   // Cálculos
-  const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const subtotal = cart.reduce((sum, item) => sum + getItemPrice(item) * item.quantity, 0);
   
   const couponDiscount = selectedCoupon
     ? selectedCoupon.discount_type === "percentage"
@@ -176,6 +214,12 @@ export default function Vendas() {
       if (cart.length === 0) throw new Error("Carrinho vazio");
       if (!paymentMethod) throw new Error("Selecione a forma de pagamento");
 
+      // Validar preços de produtos no peso
+      const itemsWithoutPrice = cart.filter(item => item.price === null && (!item.customPrice || item.customPrice <= 0));
+      if (itemsWithoutPrice.length > 0) {
+        throw new Error("Defina o preço de todos os produtos no peso");
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
@@ -204,9 +248,9 @@ export default function Vendas() {
         sale_id: sale.id,
         product_id: item.id,
         product_name: item.name,
-        unit_price: item.price,
+        unit_price: getItemPrice(item),
         quantity: item.quantity,
-        subtotal: item.price * item.quantity,
+        subtotal: getItemPrice(item) * item.quantity,
       }));
 
       const { error: itemsError } = await supabase
@@ -480,7 +524,11 @@ export default function Vendas() {
                         <ShoppingCart className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
                       </div>
                       <p className="font-bold text-primary">
-                        R$ {product.price.toFixed(2)}
+                        {product.price !== null ? (
+                          `R$ ${product.price.toFixed(2)}`
+                        ) : (
+                          <span className="text-sm">Preço no peso</span>
+                        )}
                       </p>
                     </button>
                   ))}
@@ -526,6 +574,48 @@ export default function Vendas() {
                         <X className="h-4 w-4" />
                       </Button>
                     </div>
+                    
+                    {/* Campo de preço manual para produtos no peso */}
+                    {item.price === null && (
+                      <div className="mb-2">
+                        {editingPriceId === item.id ? (
+                          <div className="flex gap-2">
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              placeholder="Digite o preço"
+                              value={tempPrice}
+                              onChange={(e) => setTempPrice(e.target.value)}
+                              className="h-8"
+                              autoFocus
+                            />
+                            <Button
+                              size="sm"
+                              onClick={() => updateCustomPrice(item.id)}
+                              className="h-8"
+                            >
+                              OK
+                            </Button>
+                          </div>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setEditingPriceId(item.id);
+                              setTempPrice(item.customPrice?.toString() || "");
+                            }}
+                            className="w-full h-8 text-xs"
+                          >
+                            {item.customPrice && item.customPrice > 0
+                              ? `Preço: R$ ${item.customPrice.toFixed(2)}`
+                              : "Definir Preço"}
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                    
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Button
@@ -549,7 +639,9 @@ export default function Vendas() {
                         </Button>
                       </div>
                       <span className="font-semibold">
-                        R$ {(item.price * item.quantity).toFixed(2)}
+                        {getItemPrice(item) > 0 
+                          ? `R$ ${(getItemPrice(item) * item.quantity).toFixed(2)}`
+                          : "R$ -"}
                       </span>
                     </div>
                   </Card>
