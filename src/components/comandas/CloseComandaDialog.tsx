@@ -193,8 +193,8 @@ export function CloseComandaDialog({ open, onOpenChange, comanda }: CloseComanda
       
       // NÃO invalidar "comandas-abertas" aqui - será feito após decisão do cupom
       
-      // Gerar cupom de fidelidade se tiver cliente e valor mínimo
-      if (comanda.customer_id && total >= 50) {
+      // Gerar cupom de fidelidade se tiver cliente
+      if (comanda.customer_id) {
         setLoyaltyCouponDialogOpen(true);
       } else {
         // Toast quando não tem cupom e invalida comandas-abertas agora

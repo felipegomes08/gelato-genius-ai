@@ -379,8 +379,8 @@ export default function Vendas() {
       
       // NÃO invalidar customer-coupons aqui - será feito após decisão do cupom
       
-      // Gerar cupom de fidelidade se tiver cliente e valor mínimo
-      if (selectedCustomer && total >= 30) {
+      // Gerar cupom de fidelidade se tiver cliente
+      if (selectedCustomer) {
         setLoyaltyCouponDialogOpen(true);
       } else {
         // Toast quando não tem cupom e limpa tudo agora
