@@ -224,6 +224,16 @@ export default function Vendas() {
     credit: "Cartão Crédito",
   };
 
+  const clearSaleState = () => {
+    setCart([]);
+    setSelectedCustomer(null);
+    setSelectedCoupon(null);
+    setManualDiscount(null);
+    setPaymentMethod(null);
+    setSearchTerm("");
+    setIsProcessing(false);
+  };
+
   // Confirmar venda
   const confirmSaleMutation = useMutation({
     mutationFn: async () => {
@@ -367,16 +377,16 @@ export default function Vendas() {
       queryClient.invalidateQueries({ queryKey: ["sales"] });
       queryClient.invalidateQueries({ queryKey: ["financial_transactions"] });
       
-      toast.success("Venda registrada com sucesso!");
+      // NÃO invalidar customer-coupons aqui - será feito após decisão do cupom
       
-      // Limpar tudo
-      setCart([]);
-      setSelectedCustomer(null);
-      setSelectedCoupon(null);
-      setManualDiscount(null);
-      setPaymentMethod(null);
-      setSearchTerm("");
-      setIsProcessing(false);
+      // Gerar cupom de fidelidade se tiver cliente e valor mínimo
+      if (selectedCustomer && total >= 30) {
+        setLoyaltyCouponDialogOpen(true);
+      } else {
+        // Toast quando não tem cupom e limpa tudo agora
+        toast.success("Venda registrada com sucesso!");
+        clearSaleState();
+      }
     },
     onError: (error: Error) => {
       setIsProcessing(false);
@@ -384,16 +394,9 @@ export default function Vendas() {
     },
   });
 
-  const abrirWhatsApp = (phone: string, message: string) => {
-    const cleanPhone = phone.replace(/\D/g, '');
-    const encodedMessage = encodeURIComponent(message);
-    const whatsappUrl = `https://wa.me/55${cleanPhone}?text=${encodedMessage}`;
-    window.open(whatsappUrl, '_blank');
-  };
-
   const createLoyaltyCouponMutation = useMutation({
-    mutationFn: async () => {
-      if (!selectedCustomer) return;
+    mutationFn: async (generateCoupon: boolean) => {
+      if (!generateCoupon || !selectedCustomer) return null;
       
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
@@ -417,38 +420,36 @@ export default function Vendas() {
       
       if (error) throw error;
       
-      return { 
-        code, 
-        value: couponValue, 
-        expireDate: expireDate.toLocaleDateString('pt-BR'),
-        customerName: selectedCustomer.name,
-        customerPhone: selectedCustomer.phone,
+      // Gerar mensagem usando template
+      if (!selectedCustomer.phone) {
+        toast.warning("Cupom criado, mas cliente sem telefone cadastrado");
+        return null;
+      }
+
+      const message = generateCouponMessage(
+        selectedCustomer.name,
+        couponValue,
+        expireDate.toISOString()
+      );
+
+      return {
+        phone: selectedCustomer.phone,
+        message: message,
       };
     },
-    onSuccess: async (data) => {
-      if (!data) return;
-
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["customer-coupons"] });
-
-      // Gerar mensagem usando template
-      if (data.customerPhone) {
-        const expireDateISO = new Date();
-        expireDateISO.setDate(expireDateISO.getDate() + 7);
-        
-        const message = generateCouponMessage(
-          data.customerName,
-          data.value,
-          expireDateISO.toISOString()
-        );
-
-        setPendingWhatsAppData({
-          phone: data.customerPhone,
-          message: message,
-        });
+      
+      if (data?.phone) {
+        // Tem telefone: abre dialog de editar mensagem
+        setPendingWhatsAppData(data);
         setEditMessageDialogOpen(true);
-        toast.success(`Cupom de R$ ${data.value} criado com sucesso!`);
+        setLoyaltyCouponDialogOpen(false);
       } else {
-        toast.success(`Cupom ${data.code} de R$ ${data.value} criado com sucesso!`);
+        // Não tem telefone: apenas fecha tudo
+        setLoyaltyCouponDialogOpen(false);
+        toast.success("Venda registrada e cupom criado!");
+        clearSaleState();
       }
     },
     onError: (error: Error) => {
@@ -466,24 +467,27 @@ export default function Vendas() {
       return;
     }
     
-    // Se tem cliente, mostrar sugestão de cupom de fidelidade
-    if (selectedCustomer) {
-      setLoyaltyCouponDialogOpen(true);
-    } else {
-      // Sem cliente, confirmar direto
-      confirmSaleMutation.mutate();
-    }
+    // Confirmar venda direto (o cupom será oferecido após a venda)
+    confirmSaleMutation.mutate();
   };
 
-  const handleConfirmWithCoupon = async () => {
-    setLoyaltyCouponDialogOpen(false);
-    await createLoyaltyCouponMutation.mutateAsync();
-    confirmSaleMutation.mutate();
+  const handleConfirmWithCoupon = () => {
+    // Verificar telefone antes de criar cupom
+    if (!selectedCustomer?.phone) {
+      toast.error("Cliente não possui telefone cadastrado");
+      setLoyaltyCouponDialogOpen(false);
+      toast.success("Venda registrada com sucesso!");
+      clearSaleState();
+      return;
+    }
+    
+    createLoyaltyCouponMutation.mutate(true);
   };
 
   const handleConfirmWithoutCoupon = () => {
     setLoyaltyCouponDialogOpen(false);
-    confirmSaleMutation.mutate();
+    toast.success("Venda registrada com sucesso!");
+    clearSaleState();
   };
 
   const handleSelectCustomer = (customer: Customer, coupon?: Coupon) => {
@@ -848,14 +852,28 @@ export default function Vendas() {
 
       <EditCouponMessageDialog
         open={editMessageDialogOpen}
-        onOpenChange={setEditMessageDialogOpen}
+        onOpenChange={(open) => {
+          setEditMessageDialogOpen(open);
+          
+          // Se usuário cancelar, fecha tudo mesmo assim
+          if (!open) {
+            toast.success("Venda registrada com sucesso!");
+            clearSaleState();
+          }
+        }}
         initialMessage={pendingWhatsAppData?.message || ""}
         customerPhone={pendingWhatsAppData?.phone || ""}
         onConfirm={(editedMessage) => {
-          if (pendingWhatsAppData) {
-            abrirWhatsApp(pendingWhatsAppData.phone, editedMessage);
+          if (pendingWhatsAppData?.phone) {
+            const whatsappUrl = `https://wa.me/55${pendingWhatsAppData.phone.replace(/\D/g, "")}?text=${encodeURIComponent(editedMessage)}`;
+            window.open(whatsappUrl, "_blank");
             setPendingWhatsAppData(null);
           }
+          
+          // Fecha tudo e mostra toast
+          setEditMessageDialogOpen(false);
+          toast.success("Venda registrada com sucesso! 🎉");
+          clearSaleState();
         }}
       />
     </AppLayout>
