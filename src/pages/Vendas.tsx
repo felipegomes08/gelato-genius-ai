@@ -15,6 +15,7 @@ import { CheckoutSummary } from "@/components/sales/CheckoutSummary";
 import { PaymentMethodSelector } from "@/components/sales/PaymentMethodSelector";
 import { Search, Plus, Minus, X, User, Percent, Sparkles, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
+import { generateCouponMessage } from "@/lib/couponMessages";
 
 interface CartItem {
   id: string;
@@ -429,38 +430,23 @@ export default function Vendas() {
 
       queryClient.invalidateQueries({ queryKey: ["customer-coupons"] });
 
-      // Gerar mensagem via IA
+      // Gerar mensagem usando template
       if (data.customerPhone) {
-        try {
-          const { data: messageData, error: messageError } = await supabase.functions.invoke(
-            'generate-coupon-message',
-            {
-              body: {
-                customerName: data.customerName,
-                couponValue: data.value,
-                expiryDate: data.expireDate,
-              }
-            }
-          );
+        const expireDateISO = new Date();
+        expireDateISO.setDate(expireDateISO.getDate() + 7);
+        
+        const message = generateCouponMessage(
+          data.customerName,
+          data.value,
+          expireDateISO.toISOString()
+        );
 
-          if (messageError) throw messageError;
-
-          const generatedMessage = messageData?.message;
-
-          if (generatedMessage) {
-            setPendingWhatsAppData({
-              phone: data.customerPhone!,
-              message: generatedMessage,
-            });
-            setEditMessageDialogOpen(true);
-            toast.success(`Cupom de R$ ${data.value} criado com sucesso!`);
-          } else {
-            toast.success(`Cupom ${data.code} de R$ ${data.value} criado com sucesso!`);
-          }
-        } catch (error) {
-          console.error("Erro ao gerar mensagem:", error);
-          toast.success(`Cupom ${data.code} de R$ ${data.value} criado com sucesso!`);
-        }
+        setPendingWhatsAppData({
+          phone: data.customerPhone,
+          message: message,
+        });
+        setEditMessageDialogOpen(true);
+        toast.success(`Cupom de R$ ${data.value} criado com sucesso!`);
       } else {
         toast.success(`Cupom ${data.code} de R$ ${data.value} criado com sucesso!`);
       }

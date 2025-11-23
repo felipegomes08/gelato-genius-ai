@@ -16,6 +16,7 @@ import { CouponSelector } from "@/components/sales/CouponSelector";
 import { ManualDiscountDialog } from "@/components/sales/ManualDiscountDialog";
 import { LoyaltyCouponDialog } from "@/components/sales/LoyaltyCouponDialog";
 import { EditCouponMessageDialog } from "@/components/sales/EditCouponMessageDialog";
+import { generateCouponMessage } from "@/lib/couponMessages";
 import { toast } from "sonner";
 import { Percent, Loader2 } from "lucide-react";
 
@@ -250,40 +251,22 @@ export function CloseComandaDialog({ open, onOpenChange, comanda }: CloseComanda
 
       if (couponError) throw couponError;
 
-      // Gerar mensagem personalizada com IA
-      try {
-        const { data: functionData, error: functionError } = await supabase.functions.invoke(
-          "generate-coupon-message",
-          {
-            body: {
-              customerName: comanda.customer?.name,
-              couponValue: discountValue,
-              expiryDate: expireDate.toLocaleDateString('pt-BR'),
-            },
-          }
-        );
-
-        if (functionError) throw functionError;
-
-        return {
-          phone: comanda.customer.phone,
-          message: functionData.message,
-        };
-      } catch (error) {
-        console.error("Erro ao gerar mensagem IA:", error);
-        
-        // Verificar se tem telefone mesmo no erro
-        if (!comanda.customer?.phone) {
-          toast.warning("Cupom criado, mas cliente sem telefone cadastrado");
-          return null; // Não retorna dados de WhatsApp
-        }
-        
-        // Retornar mensagem padrão se falhar IA
-        return {
-          phone: comanda.customer.phone,
-          message: `Olá ${comanda.customer?.name}! 🎉\n\nParabéns! Você ganhou um cupom de ${discountValue}% de desconto!\n\nCódigo: ${couponCode}\nVálido até: ${expireDate.toLocaleDateString('pt-BR')}\n\nVolte sempre! 😊`,
-        };
+      // Gerar mensagem usando template
+      if (!comanda.customer?.phone) {
+        toast.warning("Cupom criado, mas cliente sem telefone cadastrado");
+        return null;
       }
+
+      const message = generateCouponMessage(
+        comanda.customer.name,
+        discountValue,
+        expireDate.toISOString()
+      );
+
+      return {
+        phone: comanda.customer.phone,
+        message: message,
+      };
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["customer-coupons"] });
