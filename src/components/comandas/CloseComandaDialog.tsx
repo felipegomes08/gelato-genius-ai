@@ -16,9 +16,17 @@ import { CouponSelector } from "@/components/sales/CouponSelector";
 import { ManualDiscountDialog } from "@/components/sales/ManualDiscountDialog";
 import { LoyaltyCouponDialog } from "@/components/sales/LoyaltyCouponDialog";
 import { EditCouponMessageDialog } from "@/components/sales/EditCouponMessageDialog";
+import { SelectCustomerDialog } from "@/components/sales/SelectCustomerDialog";
 import { generateCouponMessage } from "@/lib/couponMessages";
 import { toast } from "sonner";
-import { Percent, Loader2 } from "lucide-react";
+import { Percent, Loader2, User } from "lucide-react";
+
+interface Customer {
+  id: string;
+  name: string;
+  phone: string | null;
+  email: string | null;
+}
 
 interface CloseComandaDialogProps {
   open: boolean;
@@ -35,24 +43,26 @@ export function CloseComandaDialog({ open, onOpenChange, comanda }: CloseComanda
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "pix" | "debit" | "credit" | null>(null);
   const [manualDiscount, setManualDiscount] = useState<ManualDiscount | null>(null);
   const [selectedCoupon, setSelectedCoupon] = useState<any>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(comanda.customer || null);
   
   const [discountDialogOpen, setDiscountDialogOpen] = useState(false);
   const [loyaltyCouponDialogOpen, setLoyaltyCouponDialogOpen] = useState(false);
   const [editMessageDialogOpen, setEditMessageDialogOpen] = useState(false);
+  const [showCustomerSelect, setShowCustomerSelect] = useState(false);
   const [pendingWhatsAppData, setPendingWhatsAppData] = useState<any>(null);
 
   const queryClient = useQueryClient();
 
   // Buscar cupons ativos do cliente
   const { data: coupons } = useQuery({
-    queryKey: ["customer-coupons", comanda.customer_id],
+    queryKey: ["customer-coupons", selectedCustomer?.id],
     queryFn: async () => {
-      if (!comanda.customer_id) return [];
+      if (!selectedCustomer?.id) return [];
       
       const { data, error } = await supabase
         .from("coupons")
         .select("*")
-        .eq("customer_id", comanda.customer_id)
+        .eq("customer_id", selectedCustomer.id)
         .eq("is_active", true)
         .eq("is_used", false)
         .gte("expire_at", new Date().toISOString());
@@ -60,7 +70,7 @@ export function CloseComandaDialog({ open, onOpenChange, comanda }: CloseComanda
       if (error) throw error;
       return data;
     },
-    enabled: open && !!comanda.customer_id,
+    enabled: open && !!selectedCustomer?.id,
   });
 
   // Resetar seleções ao abrir
@@ -69,8 +79,9 @@ export function CloseComandaDialog({ open, onOpenChange, comanda }: CloseComanda
       setPaymentMethod(null);
       setManualDiscount(null);
       setSelectedCoupon(null);
+      setSelectedCustomer(comanda.customer || null);
     }
-  }, [open]);
+  }, [open, comanda.customer]);
 
   // Calcular subtotal correto a partir dos items
   const subtotal = comanda.items?.reduce((sum: number, item: any) => {
@@ -126,6 +137,7 @@ export function CloseComandaDialog({ open, onOpenChange, comanda }: CloseComanda
         .update({
           status: "completed",
           payment_method: paymentMethod!,
+          customer_id: selectedCustomer?.id || null,
           subtotal: subtotal,
           discount_amount: totalDiscount,
           total: total,
@@ -179,7 +191,7 @@ export function CloseComandaDialog({ open, onOpenChange, comanda }: CloseComanda
         .insert({
           transaction_type: "income",
           category: "Vendas",
-          description: `Comanda - ${comanda.notes || "Sem nome"}${comanda.customer ? ` - ${comanda.customer.name}` : ""}`,
+          description: `Comanda - ${comanda.notes || "Sem nome"}${selectedCustomer ? ` - ${selectedCustomer.name}` : ""}`,
           amount: total,
           reference_id: comanda.id,
           created_by: user.id,
@@ -194,7 +206,7 @@ export function CloseComandaDialog({ open, onOpenChange, comanda }: CloseComanda
       // NÃO invalidar "comandas-abertas" aqui - será feito após decisão do cupom
       
       // Gerar cupom de fidelidade se tiver cliente
-      if (comanda.customer_id) {
+      if (selectedCustomer?.id) {
         setLoyaltyCouponDialogOpen(true);
       } else {
         // Toast quando não tem cupom e invalida comandas-abertas agora
@@ -223,9 +235,14 @@ export function CloseComandaDialog({ open, onOpenChange, comanda }: CloseComanda
     closeComandaMutation.mutate();
   };
 
+  const handleSelectCustomer = (customer: Customer) => {
+    setSelectedCustomer(customer);
+    setShowCustomerSelect(false);
+  };
+
   const createLoyaltyCouponMutation = useMutation({
     mutationFn: async (generateCoupon: boolean) => {
-      if (!generateCoupon || !comanda.customer_id) return null;
+      if (!generateCoupon || !selectedCustomer?.id) return null;
 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
@@ -239,7 +256,7 @@ export function CloseComandaDialog({ open, onOpenChange, comanda }: CloseComanda
       const { data: newCoupon, error: couponError } = await supabase
         .from("coupons")
         .insert({
-          customer_id: comanda.customer_id,
+          customer_id: selectedCustomer.id,
           code: couponCode,
           discount_type: "fixed",
           discount_value: discountValue,
@@ -252,19 +269,19 @@ export function CloseComandaDialog({ open, onOpenChange, comanda }: CloseComanda
       if (couponError) throw couponError;
 
       // Gerar mensagem usando template
-      if (!comanda.customer?.phone) {
+      if (!selectedCustomer?.phone) {
         toast.warning("Cupom criado, mas cliente sem telefone cadastrado");
         return null;
       }
 
       const message = generateCouponMessage(
-        comanda.customer.name,
+        selectedCustomer.name,
         discountValue,
         expireDate.toISOString()
       );
 
       return {
-        phone: comanda.customer.phone,
+        phone: selectedCustomer.phone,
         message: message,
       };
     },
@@ -292,7 +309,7 @@ export function CloseComandaDialog({ open, onOpenChange, comanda }: CloseComanda
 
   const handleConfirmWithCoupon = () => {
     // Verificar telefone antes de criar cupom
-    if (!comanda.customer?.phone) {
+    if (!selectedCustomer?.phone) {
       toast.error("Cliente não possui telefone cadastrado");
       setLoyaltyCouponDialogOpen(false);
       onOpenChange(false);
@@ -327,15 +344,44 @@ export function CloseComandaDialog({ open, onOpenChange, comanda }: CloseComanda
             {/* Info da comanda */}
             <Card className="p-3 bg-muted/50">
               <div className="font-semibold">{comanda.notes || "Comanda"}</div>
-              {comanda.customer && (
-                <div className="text-sm text-muted-foreground">
-                  Cliente: {comanda.customer.name}
-                </div>
-              )}
               <div className="text-sm text-muted-foreground">
                 {comanda.items?.length || 0} itens
               </div>
             </Card>
+
+            {/* Cliente */}
+            <div className="space-y-2">
+              {selectedCustomer ? (
+                <Card className="p-3 bg-muted/30">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">{selectedCustomer.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {selectedCustomer.phone || "Sem telefone"}
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelectedCustomer(null)}
+                    >
+                      Remover
+                    </Button>
+                  </div>
+                </Card>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowCustomerSelect(true)}
+                  className="w-full"
+                >
+                  <User className="h-4 w-4 mr-2" />
+                  Adicionar Cliente
+                </Button>
+              )}
+            </div>
 
             {/* Lista de itens consumidos */}
             {comanda.items && comanda.items.length > 0 && (
@@ -430,11 +476,30 @@ export function CloseComandaDialog({ open, onOpenChange, comanda }: CloseComanda
       <LoyaltyCouponDialog
         open={loyaltyCouponDialogOpen}
         onOpenChange={setLoyaltyCouponDialogOpen}
-        customerName={comanda.customer?.name || "Cliente"}
+        customerName={selectedCustomer?.name || "Cliente"}
         suggestedValue={getSuggestedCouponValue()}
         onConfirmWithCoupon={handleConfirmWithCoupon}
         onConfirmWithoutCoupon={handleConfirmWithoutCoupon}
       />
+
+      {/* Dialog de Seleção de Cliente */}
+      {showCustomerSelect && (
+        <Dialog open={showCustomerSelect} onOpenChange={setShowCustomerSelect}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Selecionar Cliente</DialogTitle>
+            </DialogHeader>
+            <SelectCustomerDialog
+              open={true}
+              onOpenChange={() => {}}
+              onSelectCustomer={handleSelectCustomer}
+              onCreateNewCustomer={handleSelectCustomer}
+              embedded={true}
+              showCoupons={false}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
 
       <EditCouponMessageDialog
         open={editMessageDialogOpen}

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
@@ -9,9 +9,20 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { SelectCustomerDialog } from "@/components/sales/SelectCustomerDialog";
 import { toast } from "sonner";
-import { Trash2, ShoppingBag } from "lucide-react";
+import { Trash2, ShoppingBag, User } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+
+interface Customer {
+  id: string;
+  name: string;
+  phone: string | null;
+  email: string | null;
+}
 
 interface EditComandaDialogProps {
   open: boolean;
@@ -26,9 +37,25 @@ export function EditComandaDialog({
 }: EditComandaDialogProps) {
   const queryClient = useQueryClient();
   const [itemsToRemove, setItemsToRemove] = useState<string[]>([]);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
+    comanda.customer || null
+  );
+  const [notes, setNotes] = useState(comanda.notes || "");
+  const [showCustomerSelect, setShowCustomerSelect] = useState(false);
 
-  const removeItemsMutation = useMutation({
+  const updateComandaMutation = useMutation({
     mutationFn: async () => {
+      // Atualizar cliente e notas da comanda
+      const { error: salesUpdateError } = await supabase
+        .from("sales")
+        .update({
+          customer_id: selectedCustomer?.id || null,
+          notes: notes.trim() || null,
+        })
+        .eq("id", comanda.id);
+
+      if (salesUpdateError) throw salesUpdateError;
+
       if (itemsToRemove.length === 0) return;
 
       // Deletar os itens selecionados
@@ -61,14 +88,14 @@ export function EditComandaDialog({
       if (updateError) throw updateError;
     },
     onSuccess: () => {
-      toast.success("Itens removidos com sucesso!");
+      toast.success("Comanda atualizada com sucesso!");
       queryClient.invalidateQueries({ queryKey: ["comandas-abertas"] });
       setItemsToRemove([]);
       onOpenChange(false);
     },
     onError: (error: any) => {
-      console.error("Erro ao remover itens:", error);
-      toast.error("Erro ao remover itens da comanda");
+      console.error("Erro ao atualizar comanda:", error);
+      toast.error("Erro ao atualizar comanda");
     },
   });
 
@@ -80,28 +107,76 @@ export function EditComandaDialog({
     );
   };
 
-  const handleConfirm = () => {
-    if (itemsToRemove.length === 0) {
-      toast.info("Selecione itens para remover");
-      return;
-    }
+  const handleSelectCustomer = (customer: Customer) => {
+    setSelectedCustomer(customer);
+    setShowCustomerSelect(false);
+  };
 
+  const handleConfirm = () => {
     if (itemsToRemove.length === comanda.items?.length) {
       toast.error("Não é possível remover todos os itens. Use a opção de excluir comanda.");
       return;
     }
 
-    removeItemsMutation.mutate();
+    updateComandaMutation.mutate();
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Editar Comanda</DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Editar Comanda</DialogTitle>
+          </DialogHeader>
 
-        <div className="space-y-4">
+          <div className="space-y-4">
+            {/* Cliente */}
+            <div className="space-y-2">
+              <Label>Cliente (opcional)</Label>
+              
+              {selectedCustomer ? (
+                <Card className="p-3 bg-muted/30">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">{selectedCustomer.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {selectedCustomer.phone || "Sem telefone"}
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelectedCustomer(null)}
+                    >
+                      Remover
+                    </Button>
+                  </div>
+                </Card>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowCustomerSelect(true)}
+                  className="w-full"
+                >
+                  <User className="h-4 w-4 mr-2" />
+                  Selecionar Cliente
+                </Button>
+              )}
+            </div>
+
+            {/* Descrição */}
+            <div className="space-y-2">
+              <Label htmlFor="notes">Descrição</Label>
+              <Textarea
+                id="notes"
+                placeholder="Ex: Mesa 5, Balcão 3..."
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={2}
+              />
+            </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <ShoppingBag className="h-4 w-4" />
             <span>Selecione os itens para remover</span>
@@ -152,14 +227,33 @@ export function EditComandaDialog({
             Cancelar
           </Button>
           <Button
-            variant="destructive"
             onClick={handleConfirm}
-            disabled={removeItemsMutation.isPending || itemsToRemove.length === 0}
+            disabled={updateComandaMutation.isPending}
           >
-            {removeItemsMutation.isPending ? "Removendo..." : "Remover Itens"}
+            {updateComandaMutation.isPending ? "Salvando..." : "Salvar Alterações"}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    {/* Dialog de Seleção de Cliente */}
+    {showCustomerSelect && (
+      <Dialog open={showCustomerSelect} onOpenChange={setShowCustomerSelect}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Selecionar Cliente</DialogTitle>
+          </DialogHeader>
+          <SelectCustomerDialog
+            open={true}
+            onOpenChange={() => {}}
+            onSelectCustomer={handleSelectCustomer}
+            onCreateNewCustomer={handleSelectCustomer}
+            embedded={true}
+            showCoupons={false}
+          />
+        </DialogContent>
+      </Dialog>
+    )}
+    </>
   );
 }
