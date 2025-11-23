@@ -22,7 +22,8 @@ interface AddItemsDialogProps {
 }
 
 interface CartItem {
-  id: string;
+  id: string;           // ID do produto (para controle de estoque)
+  cartItemId: string;   // ID único do item no carrinho
   name: string;
   price: number | null;
   quantity: number;
@@ -57,31 +58,34 @@ export function AddItemsDialog({ open, onOpenChange, comanda }: AddItemsDialogPr
   ) || [];
 
   const addToCart = (product: any) => {
-    // Se o produto não tiver preço, abre o diálogo de entrada manual
+    // Se o produto não tiver preço, SEMPRE cria um novo item separado
     if (!product.price) {
       const newItem: CartItem = {
         id: product.id,
+        cartItemId: crypto.randomUUID(),
         name: product.name,
         price: null,
         quantity: 1,
         customPrice: 0,
       };
       setCart([...cart, newItem]);
-      setEditingPrice(product.id);
+      setEditingPrice(newItem.cartItemId);
       setTempPrice("");
       return;
     }
 
+    // Para produtos com preço fixo, incrementa quantidade se já existe
     const existingItem = cart.find((item) => item.id === product.id);
     if (existingItem) {
       setCart(cart.map((item) =>
-        item.id === product.id
+        item.cartItemId === existingItem.cartItemId
           ? { ...item, quantity: item.quantity + 1 }
           : item
       ));
     } else {
       setCart([...cart, {
         id: product.id,
+        cartItemId: crypto.randomUUID(),
         name: product.name,
         price: Number(product.price),
         quantity: 1,
@@ -89,24 +93,24 @@ export function AddItemsDialog({ open, onOpenChange, comanda }: AddItemsDialogPr
     }
   };
 
-  const updateQuantity = (id: string, delta: number) => {
+  const updateQuantity = (cartItemId: string, delta: number) => {
     setCart(cart.map((item) =>
-      item.id === id
+      item.cartItemId === cartItemId
         ? { ...item, quantity: Math.max(1, item.quantity + delta) }
         : item
     ));
   };
 
-  const removeFromCart = (id: string) => {
-    setCart(cart.filter((item) => item.id !== id));
-    if (editingPrice === id) {
+  const removeFromCart = (cartItemId: string) => {
+    setCart(cart.filter((item) => item.cartItemId !== cartItemId));
+    if (editingPrice === cartItemId) {
       setEditingPrice(null);
     }
   };
 
-  const updateCustomPrice = (id: string, price: number) => {
+  const updateCustomPrice = (cartItemId: string, price: number) => {
     setCart(cart.map((item) =>
-      item.id === id
+      item.cartItemId === cartItemId
         ? { ...item, customPrice: price }
         : item
     ));
@@ -238,23 +242,28 @@ export function AddItemsDialog({ open, onOpenChange, comanda }: AddItemsDialogPr
 
             <div className="flex-1 space-y-2 overflow-y-auto">
               {cart.map((item) => (
-                <Card key={item.id} className="p-3">
+                <Card key={item.cartItemId} className="p-3">
                   <div className="flex items-start justify-between gap-2 mb-2">
-                    <div className="flex-1 text-sm font-medium line-clamp-2">
-                      {item.name}
+                    <div className="flex-1">
+                      <div className="text-sm font-medium line-clamp-2">
+                        {item.name}
+                      </div>
+                      {item.price === null && (
+                        <Badge variant="secondary" className="mt-1 text-xs">No peso</Badge>
+                      )}
                     </div>
                     <Button
                       variant="ghost"
                       size="icon"
                       className="h-6 w-6 -mt-1"
-                      onClick={() => removeFromCart(item.id)}
+                      onClick={() => removeFromCart(item.cartItemId)}
                     >
                       <X className="h-4 w-4" />
                     </Button>
                   </div>
                   
                   {/* Campo de preço customizado para produtos sem preço */}
-                  {item.price === null && editingPrice === item.id ? (
+                  {item.price === null && editingPrice === item.cartItemId ? (
                     <div className="mb-2">
                       <Input
                         type="number"
@@ -264,12 +273,12 @@ export function AddItemsDialog({ open, onOpenChange, comanda }: AddItemsDialogPr
                         onChange={(e) => setTempPrice(e.target.value)}
                         onBlur={() => {
                           if (tempPrice && Number(tempPrice) > 0) {
-                            updateCustomPrice(item.id, Number(tempPrice));
+                            updateCustomPrice(item.cartItemId, Number(tempPrice));
                           }
                         }}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' && tempPrice && Number(tempPrice) > 0) {
-                            updateCustomPrice(item.id, Number(tempPrice));
+                            updateCustomPrice(item.cartItemId, Number(tempPrice));
                           }
                         }}
                         autoFocus
@@ -282,34 +291,39 @@ export function AddItemsDialog({ open, onOpenChange, comanda }: AddItemsDialogPr
                       size="sm"
                       className="mb-2 w-full text-xs"
                       onClick={() => {
-                        setEditingPrice(item.id);
+                        setEditingPrice(item.cartItemId);
                         setTempPrice("");
                       }}
                     >
-                      Definir Preço
+                      ⚠️ Definir Preço
                     </Button>
                   ) : null}
 
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={() => updateQuantity(item.id, -1)}
-                      >
-                        <Minus className="h-3 w-3" />
-                      </Button>
-                      <span className="font-medium w-8 text-center">{item.quantity}</span>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={() => updateQuantity(item.id, 1)}
-                      >
-                        <Plus className="h-3 w-3" />
-                      </Button>
-                    </div>
+                    {/* Mostrar controles de quantidade apenas para produtos com preço fixo */}
+                    {item.price !== null ? (
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={() => updateQuantity(item.cartItemId, -1)}
+                        >
+                          <Minus className="h-3 w-3" />
+                        </Button>
+                        <span className="font-medium w-8 text-center">{item.quantity}</span>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={() => updateQuantity(item.cartItemId, 1)}
+                        >
+                          <Plus className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="text-xs text-muted-foreground">1 unidade</div>
+                    )}
                     <div className="text-sm font-bold">
                       {item.price === null && !item.customPrice ? (
                         <span className="text-muted-foreground">-</span>
