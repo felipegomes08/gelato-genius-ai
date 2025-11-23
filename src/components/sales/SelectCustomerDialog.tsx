@@ -44,6 +44,7 @@ interface SelectCustomerDialogProps {
   onSelectCustomer: (customer: Customer, coupon?: Coupon) => void;
   embedded?: boolean;
   showCoupons?: boolean;
+  onCreateNewCustomer?: (customer: Customer) => void;
 }
 
 export function SelectCustomerDialog({
@@ -52,6 +53,7 @@ export function SelectCustomerDialog({
   onSelectCustomer,
   embedded = false,
   showCoupons = true,
+  onCreateNewCustomer,
 }: SelectCustomerDialogProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [newCustomerName, setNewCustomerName] = useState("");
@@ -150,8 +152,14 @@ export function SelectCustomerDialog({
         await createCouponForCustomer(customer.id);
       } else {
         toast.success("Cliente cadastrado com sucesso!");
-        onSelectCustomer(customer);
-        onOpenChange(false);
+        
+        if (embedded && onCreateNewCustomer) {
+          onCreateNewCustomer(customer);
+        } else {
+          onSelectCustomer(customer);
+          onOpenChange(false);
+        }
+        
         resetForm();
       }
     },
@@ -668,8 +676,8 @@ export function SelectCustomerDialog({
           )}
         </div>
 
-        {!embedded && (
-          <div className="flex gap-2 pt-4">
+        <div className="flex gap-2 pt-4">
+          {!embedded && (
             <Button
               variant="outline"
               onClick={() => onOpenChange(false)}
@@ -677,19 +685,19 @@ export function SelectCustomerDialog({
             >
               Cancelar
             </Button>
-            <Button
-              onClick={() => createCustomerMutation.mutate()}
-              disabled={
-                !newCustomerName.trim() ||
-                (createCoupon && (!couponCode || !couponValue || !couponExpireDate)) ||
-                createCustomerMutation.isPending
-              }
-              className="flex-1"
-            >
-              {createCustomerMutation.isPending ? "Salvando..." : "Cadastrar"}
-            </Button>
-          </div>
-        )}
+          )}
+          <Button
+            onClick={() => createCustomerMutation.mutate()}
+            disabled={
+              !newCustomerName.trim() ||
+              (createCoupon && (!couponCode || !couponValue || !couponExpireDate)) ||
+              createCustomerMutation.isPending
+            }
+            className={embedded ? "w-full" : "flex-1"}
+          >
+            {createCustomerMutation.isPending ? "Salvando..." : "Cadastrar"}
+          </Button>
+        </div>
       </TabsContent>
     </Tabs>
   );
