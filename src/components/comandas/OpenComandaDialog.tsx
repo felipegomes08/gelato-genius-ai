@@ -78,7 +78,7 @@ export function OpenComandaDialog({ open, onOpenChange }: OpenComandaDialogProps
         .insert({
           status: "open",
           customer_id: selectedCustomer!.id,
-          notes: notes.trim(),
+          notes: notes.trim() || null,
           payment_method: "pending",
           subtotal: 0,
           discount_amount: 0,
@@ -116,10 +116,6 @@ export function OpenComandaDialog({ open, onOpenChange }: OpenComandaDialogProps
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!notes.trim()) {
-      toast.error("Informe a identificação da comanda");
-      return;
-    }
     openComandaMutation.mutate();
   };
 
@@ -142,6 +138,7 @@ export function OpenComandaDialog({ open, onOpenChange }: OpenComandaDialogProps
               open={true}
               onOpenChange={() => {}}
               onSelectCustomer={handleSelectCustomer}
+              onCreateNewCustomer={handleSelectCustomer}
               embedded={true}
               showCoupons={false}
             />
@@ -202,7 +199,7 @@ export function OpenComandaDialog({ open, onOpenChange }: OpenComandaDialogProps
 
             {/* Identificação da Comanda */}
             <div className="space-y-2">
-              <Label htmlFor="notes">Identificação da Comanda*</Label>
+              <Label htmlFor="notes">Identificação da Comanda (opcional)</Label>
               <Textarea
                 id="notes"
                 placeholder="Ex: Mesa 5, Balcão 3, Cliente da camisa azul..."
@@ -225,7 +222,7 @@ export function OpenComandaDialog({ open, onOpenChange }: OpenComandaDialogProps
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Voltar
               </Button>
-              <Button type="submit" disabled={openComandaMutation.isPending || !notes.trim()}>
+              <Button type="submit" disabled={openComandaMutation.isPending}>
                 {openComandaMutation.isPending && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
