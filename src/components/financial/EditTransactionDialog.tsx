@@ -54,6 +54,7 @@ const formSchema = z.object({
     .refine((val) => !isNaN(Number(val)) && Number(val) > 0, {
       message: "Valor deve ser maior que zero",
     }),
+  payment_method: z.string().min(1, "Forma de pagamento é obrigatória"),
   transaction_date: z.date({
     required_error: "Selecione uma data",
   }),
@@ -68,6 +69,7 @@ interface Transaction {
   description: string;
   amount: number;
   category: string;
+  payment_method: string;
   transaction_date: string;
   notes?: string | null;
 }
@@ -107,6 +109,7 @@ export function EditTransactionDialog({
       description: "",
       category: "",
       amount: "",
+      payment_method: "",
       transaction_date: new Date(),
       notes: "",
     },
@@ -119,6 +122,7 @@ export function EditTransactionDialog({
         description: transaction.description,
         category: transaction.category,
         amount: transaction.amount.toString(),
+        payment_method: transaction.payment_method || "N/A",
         transaction_date: new Date(transaction.transaction_date),
         notes: transaction.notes || "",
       });
@@ -141,6 +145,7 @@ export function EditTransactionDialog({
           description: values.description,
           category: values.category,
           amount: Number(values.amount),
+          payment_method: values.payment_method,
           transaction_date: values.transaction_date.toISOString(),
           notes: values.notes || null,
         })
@@ -209,32 +214,32 @@ export function EditTransactionDialog({
               )}
             />
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="category"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Categoria</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {CATEGORIES.map((category) => (
-                          <SelectItem key={category} value={category}>
-                            {category}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            <FormField
+              control={form.control}
+              name="category"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Categoria</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {CATEGORIES.map((category) => (
+                        <SelectItem key={category} value={category}>
+                          {category}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
+            <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="amount"
@@ -249,6 +254,31 @@ export function EditTransactionDialog({
                         {...field}
                       />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="payment_method"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Pagamento</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Forma" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="cash">Dinheiro</SelectItem>
+                        <SelectItem value="pix">PIX</SelectItem>
+                        <SelectItem value="debit">Débito</SelectItem>
+                        <SelectItem value="credit">Crédito</SelectItem>
+                        <SelectItem value="N/A">N/A</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}

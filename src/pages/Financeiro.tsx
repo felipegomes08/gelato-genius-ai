@@ -3,7 +3,7 @@ import { AppLayout } from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, TrendingUp, TrendingDown, Calendar, Loader2, Edit2, Trash2, ChevronDown } from "lucide-react";
+import { Plus, TrendingUp, TrendingDown, Calendar, Loader2, Edit2, Trash2, ChevronDown, Filter, X } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,6 +33,7 @@ interface Transaction {
   description: string;
   amount: number;
   category: string;
+  payment_method: string;
   transaction_date: string;
 }
 
@@ -45,6 +46,12 @@ export default function Financeiro() {
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [transactionToDelete, setTransactionToDelete] = useState<string | null>(null);
+  
+  // Filtros avançados
+  const [filterType, setFilterType] = useState<"all" | "income" | "expense">("all");
+  const [filterCategory, setFilterCategory] = useState<string>("all");
+  const [filterPaymentMethod, setFilterPaymentMethod] = useState<string>("all");
+  const [showFilters, setShowFilters] = useState(false);
   
   const queryClient = useQueryClient();
 
@@ -86,9 +93,39 @@ export default function Financeiro() {
 
     return transactions.filter((t) => {
       const transactionDateString = new Date(t.transaction_date).toISOString().split("T")[0];
-      return transactionDateString >= startDateString;
+      const dateMatch = transactionDateString >= startDateString;
+      const typeMatch = filterType === "all" || t.transaction_type === filterType;
+      const categoryMatch = filterCategory === "all" || t.category === filterCategory;
+      const paymentMatch = filterPaymentMethod === "all" || t.payment_method === filterPaymentMethod;
+      
+      return dateMatch && typeMatch && categoryMatch && paymentMatch;
     });
   };
+
+  // Obter categorias únicas
+  const uniqueCategories = Array.from(new Set(transactions.map(t => t.category))).sort();
+  
+  // Obter formas de pagamento únicas
+  const uniquePaymentMethods = Array.from(new Set(transactions.map(t => t.payment_method))).sort();
+
+  const getPaymentMethodLabel = (method: string) => {
+    const labels: Record<string, string> = {
+      cash: "Dinheiro",
+      pix: "PIX",
+      debit: "Débito",
+      credit: "Crédito",
+      "N/A": "N/A",
+    };
+    return labels[method] || method;
+  };
+
+  const clearFilters = () => {
+    setFilterType("all");
+    setFilterCategory("all");
+    setFilterPaymentMethod("all");
+  };
+
+  const hasActiveFilters = filterType !== "all" || filterCategory !== "all" || filterPaymentMethod !== "all";
 
   const filteredTransactions = getFilteredTransactions();
 
@@ -152,36 +189,136 @@ export default function Financeiro() {
   return (
     <AppLayout title="Financeiro">
       <div className="max-w-md md:max-w-7xl mx-auto space-y-4">
-        {/* Period Filter */}
-        <div className="flex items-center justify-between">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Calendar className="h-4 w-4 mr-2" />
-                {period}
-                <ChevronDown className="h-4 w-4 ml-2" />
+        {/* Period Filter and Actions */}
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Calendar className="h-4 w-4 mr-2" />
+                  {period}
+                  <ChevronDown className="h-4 w-4 ml-2" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuItem onClick={() => setPeriod("Hoje")}>
+                  Hoje
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setPeriod("Semana")}>
+                  Semana
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setPeriod("Mês")}>
+                  Mês
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setPeriod("Ano")}>
+                  Ano
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            
+            <Button 
+              variant={showFilters ? "default" : "outline"} 
+              size="sm"
+              onClick={() => setShowFilters(!showFilters)}
+            >
+              <Filter className="h-4 w-4 mr-2" />
+              Filtros
+              {hasActiveFilters && <Badge className="ml-2 h-5 w-5 p-0 flex items-center justify-center" variant="destructive">!</Badge>}
+            </Button>
+            
+            {hasActiveFilters && (
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={clearFilters}
+              >
+                <X className="h-4 w-4 mr-1" />
+                Limpar
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              <DropdownMenuItem onClick={() => setPeriod("Hoje")}>
-                Hoje
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setPeriod("Semana")}>
-                Semana
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setPeriod("Mês")}>
-                Mês
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setPeriod("Ano")}>
-                Ano
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+            )}
+          </div>
+          
           <Button size="sm" className="shadow-sm" onClick={() => setAddDialogOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Nova Transação
           </Button>
         </div>
+
+        {/* Advanced Filters */}
+        {showFilters && (
+          <Card className="shadow-sm">
+            <CardContent className="p-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Tipo</label>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm" className="w-full justify-between">
+                        {filterType === "all" ? "Todos" : filterType === "income" ? "Entrada" : "Saída"}
+                        <ChevronDown className="h-4 w-4 ml-2" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-full">
+                      <DropdownMenuItem onClick={() => setFilterType("all")}>
+                        Todos
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setFilterType("income")}>
+                        Entrada
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setFilterType("expense")}>
+                        Saída
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Categoria</label>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm" className="w-full justify-between">
+                        {filterCategory === "all" ? "Todas" : filterCategory}
+                        <ChevronDown className="h-4 w-4 ml-2" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-full max-h-[300px] overflow-y-auto">
+                      <DropdownMenuItem onClick={() => setFilterCategory("all")}>
+                        Todas
+                      </DropdownMenuItem>
+                      {uniqueCategories.map((category) => (
+                        <DropdownMenuItem key={category} onClick={() => setFilterCategory(category)}>
+                          {category}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Pagamento</label>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm" className="w-full justify-between">
+                        {filterPaymentMethod === "all" ? "Todos" : getPaymentMethodLabel(filterPaymentMethod)}
+                        <ChevronDown className="h-4 w-4 ml-2" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-full">
+                      <DropdownMenuItem onClick={() => setFilterPaymentMethod("all")}>
+                        Todos
+                      </DropdownMenuItem>
+                      {uniquePaymentMethods.map((method) => (
+                        <DropdownMenuItem key={method} onClick={() => setFilterPaymentMethod(method)}>
+                          {getPaymentMethodLabel(method)}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -265,9 +402,14 @@ export default function Financeiro() {
                     </div>
                     <div className="flex-1">
                       <p className="font-medium text-sm">{transaction.description}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {transaction.category}
-                      </p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <p className="text-xs text-muted-foreground">
+                          {transaction.category}
+                        </p>
+                        <Badge variant="outline" className="text-xs h-5">
+                          {getPaymentMethodLabel(transaction.payment_method)}
+                        </Badge>
+                      </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
