@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -27,6 +27,12 @@ export function EditCouponMessageDialog({
   onConfirm,
 }: EditCouponMessageDialogProps) {
   const [message, setMessage] = useState(initialMessage);
+
+  useEffect(() => {
+    if (initialMessage && initialMessage.trim()) {
+      setMessage(initialMessage);
+    }
+  }, [initialMessage]);
 
   const handleConfirm = () => {
     onConfirm(message);
