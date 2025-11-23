@@ -18,6 +18,7 @@ import { toast } from "sonner";
 
 interface CartItem {
   id: string;
+  cartItemId: string; // Identificador único do item no carrinho
   name: string;
   price: number | null;
   quantity: number;
@@ -57,7 +58,7 @@ export default function Vendas() {
   const [loyaltyCouponDialogOpen, setLoyaltyCouponDialogOpen] = useState(false);
   const [editMessageDialogOpen, setEditMessageDialogOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [editingPriceId, setEditingPriceId] = useState<string | null>(null);
+  const [editingPriceId, setEditingPriceId] = useState<string | null>(null); // cartItemId sendo editado
   const [tempPrice, setTempPrice] = useState<string>("");
   
   const [pendingWhatsAppData, setPendingWhatsAppData] = useState<{
@@ -86,7 +87,28 @@ export default function Vendas() {
   ) || [];
 
   const addToCart = (product: typeof products[0]) => {
-    const existingItem = cart.find((item) => item.id === product.id);
+    // Para produtos no peso, sempre criar um novo item (não incrementar quantidade)
+    if (product.price === null) {
+      const cartItemId = `${product.id}-${Date.now()}-${Math.random()}`;
+      const newItem: CartItem = { 
+        id: product.id,
+        cartItemId: cartItemId,
+        name: product.name,
+        price: product.price,
+        quantity: 1,
+        controls_stock: product.controls_stock,
+        current_stock: product.current_stock,
+        customPrice: 0,
+      };
+      
+      setCart([...cart, newItem]);
+      setEditingPriceId(cartItemId);
+      setTempPrice("");
+      return;
+    }
+
+    // Para produtos com preço fixo, incrementar quantidade se já existe
+    const existingItem = cart.find((item) => item.id === product.id && item.price !== null);
     
     // Verificar estoque
     if (product.controls_stock && product.current_stock !== null) {
@@ -100,35 +122,28 @@ export default function Vendas() {
     if (existingItem) {
       setCart(
         cart.map((item) =>
-          item.id === product.id
+          item.cartItemId === existingItem.cartItemId
             ? { ...item, quantity: item.quantity + 1 }
             : item
         )
       );
     } else {
+      const cartItemId = `${product.id}-${Date.now()}-${Math.random()}`;
       const newItem: CartItem = { 
         id: product.id,
+        cartItemId: cartItemId,
         name: product.name,
         price: product.price,
         quantity: 1,
         controls_stock: product.controls_stock,
         current_stock: product.current_stock,
       };
-
-      // Se não tem preço, inicia customPrice como 0 e abre o editor
-      if (product.price === null) {
-        newItem.customPrice = 0;
-        setCart([...cart, newItem]);
-        setEditingPriceId(product.id);
-        setTempPrice("");
-      } else {
-        setCart([...cart, newItem]);
-      }
+      setCart([...cart, newItem]);
     }
   };
 
-  const updateQuantity = (id: string, delta: number) => {
-    const item = cart.find(i => i.id === id);
+  const updateQuantity = (cartItemId: string, delta: number) => {
+    const item = cart.find(i => i.cartItemId === cartItemId);
     if (!item) return;
 
     const newQuantity = item.quantity + delta;
@@ -142,7 +157,7 @@ export default function Vendas() {
     setCart(
       cart
         .map((item) =>
-          item.id === id
+          item.cartItemId === cartItemId
             ? { ...item, quantity: Math.max(0, newQuantity) }
             : item
         )
@@ -150,15 +165,15 @@ export default function Vendas() {
     );
   };
 
-  const removeFromCart = (id: string) => {
-    setCart(cart.filter((item) => item.id !== id));
-    if (editingPriceId === id) {
+  const removeFromCart = (cartItemId: string) => {
+    setCart(cart.filter((item) => item.cartItemId !== cartItemId));
+    if (editingPriceId === cartItemId) {
       setEditingPriceId(null);
       setTempPrice("");
     }
   };
 
-  const updateCustomPrice = (id: string) => {
+  const updateCustomPrice = (cartItemId: string) => {
     const priceValue = parseFloat(tempPrice);
     if (isNaN(priceValue) || priceValue <= 0) {
       toast.error("Digite um valor válido");
@@ -166,13 +181,13 @@ export default function Vendas() {
     }
 
     setCart(cart.map((item) =>
-      item.id === id
+      item.cartItemId === cartItemId
         ? { ...item, customPrice: priceValue }
         : item
     ));
     setEditingPriceId(null);
     setTempPrice("");
-    toast.success("Preço definido com sucesso!");
+    toast.success("Preço definido!");
   };
 
   const getItemPrice = (item: CartItem): number => {
@@ -260,24 +275,51 @@ export default function Vendas() {
       if (itemsError) throw itemsError;
 
       // 3. Atualizar estoque e criar movimentações
+      // Agregar itens por product_id para evitar múltiplas atualizações
+      const productQuantities = new Map<string, { quantity: number; controls_stock: boolean }>();
+      
       for (const item of cart) {
-        if (item.controls_stock && item.current_stock !== null) {
-          const newStock = item.current_stock - item.quantity;
+        const existing = productQuantities.get(item.id);
+        if (existing) {
+          existing.quantity += item.quantity;
+        } else {
+          productQuantities.set(item.id, {
+            quantity: item.quantity,
+            controls_stock: item.controls_stock,
+          });
+        }
+      }
+
+      // Atualizar estoque para cada produto único
+      for (const [productId, { quantity, controls_stock }] of productQuantities) {
+        if (controls_stock) {
+          // Buscar estoque atual do banco
+          const { data: product, error: fetchError } = await supabase
+            .from("products")
+            .select("current_stock")
+            .eq("id", productId)
+            .single();
+
+          if (fetchError) throw fetchError;
+          if (product.current_stock === null) continue;
+
+          const previousStock = product.current_stock;
+          const newStock = previousStock - quantity;
 
           const { error: stockError } = await supabase
             .from("products")
             .update({ current_stock: newStock })
-            .eq("id", item.id);
+            .eq("id", productId);
 
           if (stockError) throw stockError;
 
           const { error: movementError } = await supabase
             .from("stock_movements")
             .insert({
-              product_id: item.id,
+              product_id: productId,
               movement_type: "sale",
-              quantity: -item.quantity,
-              previous_stock: item.current_stock,
+              quantity: -quantity,
+              previous_stock: previousStock,
               new_stock: newStock,
               reference_id: sale.id,
               reason: "Venda registrada",
@@ -562,13 +604,18 @@ export default function Vendas() {
             ) : (
               <div className="space-y-2">
                 {cart.map((item) => (
-                  <Card key={item.id} className="p-3">
+                  <Card key={item.cartItemId} className="p-3">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="font-medium text-sm flex-1">{item.name}</span>
+                      <div className="flex-1 flex items-center gap-2">
+                        <span className="font-medium text-sm">{item.name}</span>
+                        {item.price === null && (
+                          <Badge variant="secondary" className="text-xs">No peso</Badge>
+                        )}
+                      </div>
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => removeFromCart(item.id)}
+                        onClick={() => removeFromCart(item.cartItemId)}
                         className="h-8 w-8"
                       >
                         <X className="h-4 w-4" />
@@ -578,21 +625,31 @@ export default function Vendas() {
                     {/* Campo de preço manual para produtos no peso */}
                     {item.price === null && (
                       <div className="mb-2">
-                        {editingPriceId === item.id ? (
+                        {editingPriceId === item.cartItemId ? (
                           <div className="flex gap-2">
                             <Input
                               type="number"
                               step="0.01"
                               min="0"
-                              placeholder="Digite o preço"
+                              placeholder="Digite o preço (R$)"
                               value={tempPrice}
                               onChange={(e) => setTempPrice(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  updateCustomPrice(item.cartItemId);
+                                }
+                              }}
+                              onBlur={() => {
+                                if (tempPrice && parseFloat(tempPrice) > 0) {
+                                  updateCustomPrice(item.cartItemId);
+                                }
+                              }}
                               className="h-8"
                               autoFocus
                             />
                             <Button
                               size="sm"
-                              onClick={() => updateCustomPrice(item.id)}
+                              onClick={() => updateCustomPrice(item.cartItemId)}
                               className="h-8"
                             >
                               OK
@@ -603,47 +660,56 @@ export default function Vendas() {
                             variant="outline"
                             size="sm"
                             onClick={() => {
-                              setEditingPriceId(item.id);
+                              setEditingPriceId(item.cartItemId);
                               setTempPrice(item.customPrice?.toString() || "");
                             }}
                             className="w-full h-8 text-xs"
                           >
                             {item.customPrice && item.customPrice > 0
-                              ? `Preço: R$ ${item.customPrice.toFixed(2)}`
-                              : "Definir Preço"}
+                              ? `R$ ${item.customPrice.toFixed(2)}`
+                              : "⚠️ Definir Preço"}
                           </Button>
                         )}
                       </div>
                     )}
                     
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => updateQuantity(item.id, -1)}
-                          className="h-8 w-8"
-                        >
-                          <Minus className="h-3 w-3" />
-                        </Button>
-                        <span className="w-8 text-center font-semibold">
-                          {item.quantity}
+                    {/* Controles de quantidade apenas para produtos com preço fixo */}
+                    {item.price !== null ? (
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => updateQuantity(item.cartItemId, -1)}
+                            className="h-8 w-8"
+                          >
+                            <Minus className="h-3 w-3" />
+                          </Button>
+                          <span className="w-8 text-center font-semibold">
+                            {item.quantity}
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => updateQuantity(item.cartItemId, 1)}
+                            className="h-8 w-8"
+                          >
+                            <Plus className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        <span className="font-semibold">
+                          R$ {(getItemPrice(item) * item.quantity).toFixed(2)}
                         </span>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => updateQuantity(item.id, 1)}
-                          className="h-8 w-8"
-                        >
-                          <Plus className="h-3 w-3" />
-                        </Button>
                       </div>
-                      <span className="font-semibold">
-                        {getItemPrice(item) > 0 
-                          ? `R$ ${(getItemPrice(item) * item.quantity).toFixed(2)}`
-                          : "R$ -"}
-                      </span>
-                    </div>
+                    ) : (
+                      <div className="flex items-center justify-end">
+                        <span className="font-semibold">
+                          {getItemPrice(item) > 0 
+                            ? `R$ ${getItemPrice(item).toFixed(2)}`
+                            : "R$ -"}
+                        </span>
+                      </div>
+                    )}
                   </Card>
                 ))}
               </div>
