@@ -193,6 +193,7 @@ export function CloseComandaDialog({ open, onOpenChange, comanda }: CloseComanda
           category: "Vendas",
           description: `Comanda - ${comanda.notes || "Sem nome"}${selectedCustomer ? ` - ${selectedCustomer.name}` : ""}`,
           amount: total,
+          payment_method: paymentMethod,
           reference_id: comanda.id,
           created_by: user.id,
         });

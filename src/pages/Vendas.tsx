@@ -362,9 +362,9 @@ export default function Vendas() {
           description: `Venda #${sale.id.slice(0, 8)}${selectedCustomer ? ` - ${selectedCustomer.name}` : ""}`,
           category: "Vendas",
           amount: total,
+          payment_method: paymentMethod,
           transaction_date: new Date().toISOString(),
           reference_id: sale.id,
-          notes: `Forma de pagamento: ${paymentMethodLabels[paymentMethod]}`,
           created_by: user.id,
         });
 
