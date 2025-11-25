@@ -396,36 +396,36 @@ export default function Dashboard() {
           <Card className="shadow-sm">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
-              <Users className="h-5 w-5 text-primary" />
-              Clientes que Mais Compraram
+              <Package className="h-5 w-5 text-primary" />
+              Produtos que Mais Venderam
             </CardTitle>
             <p className="text-xs text-muted-foreground">{getPeriodLabel()}</p>
           </CardHeader>
           <CardContent className="space-y-3">
-            {loadingTopCustomers ? (
+            {loadingTopProducts ? (
               <>
                 <Skeleton className="h-16 w-full" />
                 <Skeleton className="h-16 w-full" />
                 <Skeleton className="h-16 w-full" />
               </>
-            ) : topCustomers && topCustomers.length > 0 ? (
-              topCustomers.map((customer: any, index) => (
+            ) : topProducts && topProducts.length > 0 ? (
+              topProducts.map((product: any, index) => (
                 <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                   <div className="flex items-center gap-3">
                     <div className="flex items-center justify-center w-8 h-8 rounded-full bg-accent/10 text-accent font-bold text-sm">
                       {index + 1}
                     </div>
                     <div>
-                      <p className="font-medium text-sm">{customer.name}</p>
-                      <p className="text-xs text-muted-foreground">{customer.purchases} compras</p>
+                      <p className="font-medium text-sm">{product.name}</p>
+                      <p className="text-xs text-muted-foreground">{product.sold} vendidos</p>
                     </div>
                   </div>
-                  <p className="font-semibold text-sm">R$ {customer.total.toFixed(2)}</p>
+                  <p className="font-semibold text-sm">R$ {product.revenue.toFixed(2)}</p>
                 </div>
               ))
             ) : (
               <p className="text-sm text-muted-foreground text-center py-4">
-                Nenhum cliente com compras no período selecionado
+                Nenhum produto vendido no período selecionado
               </p>
             )}
           </CardContent>
