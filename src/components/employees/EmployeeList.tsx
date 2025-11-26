@@ -1,4 +1,4 @@
-import { User, Settings, Shield, Edit, UserX, UserCheck } from "lucide-react";
+import { User, Settings, Shield, Edit, UserX, UserCheck, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { EditPermissionsDialog } from "./EditPermissionsDialog";
@@ -44,6 +44,7 @@ export function EmployeeList({ employees, isLoading }: EmployeeListProps) {
   const [isPermissionsDialogOpen, setIsPermissionsDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeactivateDialogOpen, setIsDeactivateDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const queryClient = useQueryClient();
 
   if (isLoading) {
@@ -89,6 +90,11 @@ export function EmployeeList({ employees, isLoading }: EmployeeListProps) {
     setIsDeactivateDialogOpen(true);
   };
 
+  const handleDeleteClick = (employee: Employee) => {
+    setSelectedEmployee(employee);
+    setIsDeleteDialogOpen(true);
+  };
+
   const handleToggleActive = async () => {
     if (!selectedEmployee) return;
 
@@ -116,6 +122,45 @@ export function EmployeeList({ employees, isLoading }: EmployeeListProps) {
     } catch (error: any) {
       console.error("Full error:", error);
       toast.error(error.message || "Erro ao atualizar status do funcionário");
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!selectedEmployee) return;
+
+    try {
+      // Delete user permissions first
+      await supabase
+        .from("user_permissions")
+        .delete()
+        .eq("user_id", selectedEmployee.id);
+
+      // Delete user roles
+      await supabase
+        .from("user_roles")
+        .delete()
+        .eq("user_id", selectedEmployee.id);
+
+      // Delete the profile
+      const { error } = await supabase
+        .from("profiles")
+        .delete()
+        .eq("id", selectedEmployee.id);
+
+      if (error) {
+        console.error("Error deleting employee:", error);
+        throw error;
+      }
+
+      toast.success("Funcionário excluído com sucesso!");
+      
+      setIsDeleteDialogOpen(false);
+      setSelectedEmployee(null);
+      
+      await queryClient.invalidateQueries({ queryKey: ["employees"] });
+    } catch (error: any) {
+      console.error("Full error:", error);
+      toast.error(error.message || "Erro ao excluir funcionário");
     }
   };
 
@@ -186,6 +231,15 @@ export function EmployeeList({ employees, isLoading }: EmployeeListProps) {
                       <UserCheck className="h-4 w-4" />
                     )}
                   </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDeleteClick(employee)}
+                    title="Excluir"
+                    className="text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
               )}
             </div>
@@ -221,6 +275,26 @@ export function EmployeeList({ employees, isLoading }: EmployeeListProps) {
                 <AlertDialogCancel>Cancelar</AlertDialogCancel>
                 <AlertDialogAction onClick={handleToggleActive}>
                   Confirmar
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+          <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Excluir Funcionário</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Tem certeza que deseja excluir permanentemente o funcionário <strong>{selectedEmployee.full_name}</strong>? 
+                  Esta ação não pode ser desfeita e todos os dados associados serão perdidos.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction 
+                  onClick={handleDelete}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Excluir
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
