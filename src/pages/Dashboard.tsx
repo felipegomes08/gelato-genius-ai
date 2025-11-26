@@ -1,4 +1,3 @@
-import { AppLayout } from "@/components/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -308,201 +307,172 @@ export default function Dashboard() {
       trend: "warning",
     },
   ];
+
   return (
-    <AppLayout title="Dashboard">
-      <div className="max-w-md md:max-w-7xl mx-auto space-y-6">
-        {/* Period Filter */}
-        <Card className="shadow-sm">
-          <CardContent className="p-3">
-            <Tabs value={period} onValueChange={(v) => setPeriod(v as PeriodType)}>
-              <TabsList className="grid w-full grid-cols-5">
-                <TabsTrigger value="today" className="text-xs">Hoje</TabsTrigger>
-                <TabsTrigger value="7days" className="text-xs">7d</TabsTrigger>
-                <TabsTrigger value="30days" className="text-xs">30d</TabsTrigger>
-                <TabsTrigger value="month" className="text-xs">Mês</TabsTrigger>
-                <TabsTrigger value="all" className="text-xs">Tudo</TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </CardContent>
-        </Card>
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {stats.map((stat) => (
-            <Card key={stat.title} className="shadow-sm hover:shadow-md transition-shadow">
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between mb-2">
-                  <div className={`p-2 rounded-lg ${
-                    stat.trend === "warning" 
-                      ? "bg-destructive/10" 
-                      : "bg-primary/10"
-                  }`}>
-                    <stat.icon className={`h-4 w-4 ${
-                      stat.trend === "warning"
-                        ? "text-destructive"
-                        : "text-primary"
-                    }`} />
-                  </div>
-                  <span className={`text-xs font-medium ${
+    <div className="max-w-md md:max-w-7xl mx-auto space-y-6">
+      {/* Period Filter */}
+      <Card className="shadow-sm">
+        <CardContent className="p-3">
+          <Tabs value={period} onValueChange={(v) => setPeriod(v as PeriodType)}>
+            <TabsList className="grid w-full grid-cols-5">
+              <TabsTrigger value="today" className="text-xs">Hoje</TabsTrigger>
+              <TabsTrigger value="7days" className="text-xs">7d</TabsTrigger>
+              <TabsTrigger value="30days" className="text-xs">30d</TabsTrigger>
+              <TabsTrigger value="month" className="text-xs">Mês</TabsTrigger>
+              <TabsTrigger value="all" className="text-xs">Tudo</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </CardContent>
+      </Card>
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {stats.map((stat) => (
+          <Card key={stat.title} className="shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between mb-2">
+                <div className={`p-2 rounded-lg ${
+                  stat.trend === "warning" 
+                    ? "bg-destructive/10" 
+                    : "bg-primary/10"
+                }`}>
+                  <stat.icon className={`h-4 w-4 ${
                     stat.trend === "warning"
                       ? "text-destructive"
-                      : "text-success"
-                  }`}>
-                    {stat.change}
-                  </span>
+                      : "text-primary"
+                  }`} />
                 </div>
-                <div className="space-y-1">
-                  <p className="text-2xl font-bold">{stat.value}</p>
-                  <p className="text-xs text-muted-foreground">{stat.title}</p>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* AI Insights - Full width */}
-        <Card className="shadow-sm">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary" />
-              Insights da IA
-            </CardTitle>
-            <CardDescription>
-              Análise inteligente dos seus dados de negócio
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {loadingInsights ? (
-              <>
-                <Skeleton className="h-16 w-full" />
-                <Skeleton className="h-16 w-full" />
-                <Skeleton className="h-16 w-full" />
-              </>
-            ) : aiInsights ? (
-              <div className="prose prose-sm max-w-none">
-                <div className="whitespace-pre-line text-sm text-foreground">
-                  {aiInsights}
-                </div>
+                <span className={`text-xs font-medium ${
+                  stat.trend === "warning"
+                    ? "text-destructive"
+                    : "text-success"
+                }`}>
+                  {stat.change}
+                </span>
               </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                Aguardando dados para gerar insights...
-              </p>
-            )}
-          </CardContent>
+              <div className="space-y-1">
+                <p className="text-2xl font-bold">{stat.value}</p>
+                <p className="text-xs text-muted-foreground">{stat.title}</p>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* AI Insights - Full width */}
+      <Card className="shadow-sm">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-primary" />
+            Insights da IA
+          </CardTitle>
+          <CardDescription>
+            Análise inteligente dos seus dados de negócio
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {loadingInsights ? (
+            <>
+              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full" />
+            </>
+          ) : aiInsights ? (
+            <div className="prose prose-sm max-w-none">
+              <div className="whitespace-pre-line text-sm text-foreground">
+                {aiInsights}
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Aguardando dados para gerar insights...
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Expiring Coupons Card */}
+      <ExpiringCouponsCard />
+
+      {/* Top Products e Top Customers side by side */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Top Products */}
+        <Card className="shadow-sm">
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Package className="h-5 w-5 text-primary" />
+            Produtos que Mais Venderam
+          </CardTitle>
+          <p className="text-xs text-muted-foreground">{getPeriodLabel()}</p>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {loadingTopProducts ? (
+            <>
+              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full" />
+            </>
+          ) : topProducts && topProducts.length > 0 ? (
+            topProducts.map((product: any, index) => (
+              <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-accent/10 text-accent font-bold text-sm">
+                    {index + 1}
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">{product.name}</p>
+                    <p className="text-xs text-muted-foreground">{product.sold} vendidos</p>
+                  </div>
+                </div>
+                <p className="font-semibold text-sm">R$ {product.revenue.toFixed(2)}</p>
+              </div>
+            ))
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              Nenhum produto vendido no período selecionado
+            </p>
+          )}
+        </CardContent>
         </Card>
 
-        {/* Expiring Coupons Card */}
-        <ExpiringCouponsCard />
-
-        {/* Top Products e Top Customers side by side */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Top Products */}
-          <Card className="shadow-sm">
+        {/* Top Customers */}
+        <Card className="shadow-sm">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
-              <Package className="h-5 w-5 text-primary" />
-              Produtos que Mais Venderam
+              <Users className="h-5 w-5 text-primary" />
+              Clientes que Mais Compraram
             </CardTitle>
             <p className="text-xs text-muted-foreground">{getPeriodLabel()}</p>
           </CardHeader>
           <CardContent className="space-y-3">
-            {loadingTopProducts ? (
+            {loadingTopCustomers ? (
               <>
                 <Skeleton className="h-16 w-full" />
                 <Skeleton className="h-16 w-full" />
                 <Skeleton className="h-16 w-full" />
               </>
-            ) : topProducts && topProducts.length > 0 ? (
-              topProducts.map((product: any, index) => (
+            ) : topCustomers && topCustomers.length > 0 ? (
+              topCustomers.map((customer: any, index) => (
                 <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                   <div className="flex items-center gap-3">
                     <div className="flex items-center justify-center w-8 h-8 rounded-full bg-accent/10 text-accent font-bold text-sm">
                       {index + 1}
                     </div>
                     <div>
-                      <p className="font-medium text-sm">{product.name}</p>
-                      <p className="text-xs text-muted-foreground">{product.sold} vendidos</p>
+                      <p className="font-medium text-sm">{customer.name}</p>
+                      <p className="text-xs text-muted-foreground">{customer.purchases} compras</p>
                     </div>
                   </div>
-                  <p className="font-semibold text-sm">R$ {product.revenue.toFixed(2)}</p>
+                  <p className="font-semibold text-sm">R$ {customer.total.toFixed(2)}</p>
                 </div>
               ))
             ) : (
               <p className="text-sm text-muted-foreground text-center py-4">
-                Nenhum produto vendido no período selecionado
+                Nenhum cliente com compras no período selecionado
               </p>
             )}
           </CardContent>
-          </Card>
-
-          {/* Top Customers */}
-          <Card className="shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Users className="h-5 w-5 text-primary" />
-                Clientes que Mais Compraram
-              </CardTitle>
-              <p className="text-xs text-muted-foreground">{getPeriodLabel()}</p>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {loadingTopCustomers ? (
-                <>
-                  <Skeleton className="h-16 w-full" />
-                  <Skeleton className="h-16 w-full" />
-                  <Skeleton className="h-16 w-full" />
-                </>
-              ) : topCustomers && topCustomers.length > 0 ? (
-                topCustomers.map((customer: any, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-accent/10 text-accent font-bold text-sm">
-                        {index + 1}
-                      </div>
-                      <div>
-                        <p className="font-medium text-sm">{customer.name}</p>
-                        <p className="text-xs text-muted-foreground">{customer.purchases} compras</p>
-                      </div>
-                    </div>
-                    <p className="font-semibold text-sm">R$ {customer.total.toFixed(2)}</p>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  Nenhum cliente com compras no período selecionado
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Resumo do Período */}
-        <Card className="shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <DollarSign className="h-5 w-5 text-success" />
-              Resumo - {getPeriodLabel()}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-              <div>
-                <p className="font-medium text-sm">Total de Vendas</p>
-                <p className="text-xs text-muted-foreground">
-                  {currentSales?.length || 0} transações
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="font-bold text-lg">R$ {currentRevenue.toFixed(2)}</p>
-                {period !== 'all' && (
-                  <p className={`text-xs font-medium ${Number(revenueChange) >= 0 ? 'text-success' : 'text-destructive'}`}>
-                    {revenueChange}% {getComparisonLabel()}
-                  </p>
-                )}
-              </div>
-            </div>
-          </CardContent>
         </Card>
       </div>
-    </AppLayout>
+    </div>
   );
 }
