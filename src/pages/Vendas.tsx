@@ -573,6 +573,7 @@ export default function Vendas() {
             )}
           </div>
         </div>
+        </div>
 
         {/* Carrinho (1 coluna fixa à direita em desktop) */}
         <div className="lg:col-span-1 space-y-3">
@@ -821,8 +822,8 @@ export default function Vendas() {
             </Button>
           </div>
         )}
-        </div>
       </div>
+
       {/* Dialogs */}
       <SelectCustomerDialog
         open={customerDialogOpen}
