@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { PermissionRoute } from "@/components/PermissionRoute";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Vendas from "./pages/Vendas";
@@ -25,12 +26,12 @@ const App = () => (
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/vendas" element={<ProtectedRoute><Vendas /></ProtectedRoute>} />
-          <Route path="/comandas" element={<ProtectedRoute><Comandas /></ProtectedRoute>} />
-          <Route path="/produtos" element={<ProtectedRoute><Produtos /></ProtectedRoute>} />
-          <Route path="/financeiro" element={<ProtectedRoute><Financeiro /></ProtectedRoute>} />
-          <Route path="/funcionarios" element={<ProtectedRoute><Funcionarios /></ProtectedRoute>} />
-          <Route path="/clientes" element={<ProtectedRoute><Clientes /></ProtectedRoute>} />
+          <Route path="/vendas" element={<PermissionRoute permission="can_access_sales"><Vendas /></PermissionRoute>} />
+          <Route path="/comandas" element={<PermissionRoute permission="can_access_sales"><Comandas /></PermissionRoute>} />
+          <Route path="/produtos" element={<PermissionRoute permission="can_access_products"><Produtos /></PermissionRoute>} />
+          <Route path="/financeiro" element={<PermissionRoute permission="can_access_financial"><Financeiro /></PermissionRoute>} />
+          <Route path="/funcionarios" element={<PermissionRoute requireMaster><Funcionarios /></PermissionRoute>} />
+          <Route path="/clientes" element={<PermissionRoute permission="can_access_sales"><Clientes /></PermissionRoute>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
