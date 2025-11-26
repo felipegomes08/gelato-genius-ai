@@ -1,4 +1,5 @@
 import { User, LogOut } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
 import {
   DropdownMenu,
@@ -17,6 +18,12 @@ interface HeaderProps {
 
 export const Header = ({ title = "Churrosteria" }: HeaderProps) => {
   const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/login");
+  };
 
   return (
     <div className="flex items-center justify-between flex-1">
@@ -35,7 +42,7 @@ export const Header = ({ title = "Churrosteria" }: HeaderProps) => {
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>{user?.email}</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={signOut} className="cursor-pointer">
+          <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
             <LogOut className="h-4 w-4 mr-2" />
             Sair
           </DropdownMenuItem>
