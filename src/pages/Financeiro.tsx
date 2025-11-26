@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { AppLayout } from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -178,17 +177,14 @@ export default function Financeiro() {
 
   if (isLoading) {
     return (
-      <AppLayout title="Financeiro">
-        <div className="max-w-md md:max-w-7xl mx-auto flex items-center justify-center min-h-[50vh]">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      </AppLayout>
+      <div className="max-w-md md:max-w-7xl mx-auto flex items-center justify-center min-h-[50vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
     );
   }
 
   return (
-    <AppLayout title="Financeiro">
-      <div className="max-w-md md:max-w-7xl mx-auto space-y-4">
+    <div className="max-w-md md:max-w-7xl mx-auto space-y-4">
         {/* Period Filter and Actions */}
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2">
@@ -487,7 +483,6 @@ export default function Financeiro() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      </div>
-    </AppLayout>
+    </div>
   );
 }

@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { AppLayout } from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -498,8 +497,7 @@ export default function Vendas() {
   };
 
   return (
-    <AppLayout title="PDV - Vendas">
-      <div className="max-w-md md:max-w-7xl mx-auto space-y-3 md:pb-0">
+    <div className="max-w-md md:max-w-7xl mx-auto space-y-3 md:pb-0">
         {/* Desktop: Split view - Produtos + Carrinho lado a lado */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Produtos (2 colunas em desktop) */}
@@ -825,8 +823,6 @@ export default function Vendas() {
         )}
         </div>
       </div>
-      </div>
-
       {/* Dialogs */}
       <SelectCustomerDialog
         open={customerDialogOpen}
@@ -876,6 +872,6 @@ export default function Vendas() {
           clearSaleState();
         }}
       />
-    </AppLayout>
+    </div>
   );
 }

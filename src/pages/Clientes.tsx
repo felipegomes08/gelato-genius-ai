@@ -1,4 +1,3 @@
-import { AppLayout } from "@/components/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
@@ -25,30 +24,28 @@ export default function Clientes() {
   });
 
   return (
-    <AppLayout title="Clientes">
-      <div className="max-w-md md:max-w-7xl mx-auto space-y-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0">
-            <CardTitle>Gerenciar Clientes</CardTitle>
-            <Button 
-              size="sm" 
-              onClick={() => setIsAddDialogOpen(true)}
-              className="h-9"
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              Adicionar
-            </Button>
-          </CardHeader>
-          <CardContent>
-            <CustomerList customers={customers} isLoading={isLoading} />
-          </CardContent>
-        </Card>
+    <div className="max-w-md md:max-w-7xl mx-auto space-y-4">
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <CardTitle>Gerenciar Clientes</CardTitle>
+          <Button 
+            size="sm" 
+            onClick={() => setIsAddDialogOpen(true)}
+            className="h-9"
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            Adicionar
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <CustomerList customers={customers} isLoading={isLoading} />
+        </CardContent>
+      </Card>
 
       <AddCustomerDialog 
         open={isAddDialogOpen} 
         onOpenChange={setIsAddDialogOpen}
       />
-      </div>
-    </AppLayout>
+    </div>
   );
 }
