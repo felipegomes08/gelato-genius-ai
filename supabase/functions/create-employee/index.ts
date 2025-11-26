@@ -121,10 +121,11 @@ serve(async (req) => {
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Unexpected error:", error);
+    const errorMessage = error instanceof Error ? error.message : "Erro inesperado";
     return new Response(
-      JSON.stringify({ error: error.message || "Erro inesperado" }),
+      JSON.stringify({ error: errorMessage }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
