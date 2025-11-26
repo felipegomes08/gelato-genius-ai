@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { IceCreamCone, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import logoChurrosteria from "@/assets/logo-churrosteria.png";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
@@ -42,13 +43,15 @@ export default function Login() {
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="space-y-4 text-center">
           <div className="flex justify-center">
-            <div className="p-4 bg-gradient-to-br from-primary to-accent rounded-2xl shadow-md">
-              <IceCreamCone className="h-12 w-12 text-primary-foreground" />
-            </div>
+            <img 
+              src={logoChurrosteria} 
+              alt="Logo Churrosteria" 
+              className="h-24 w-24 object-contain"
+            />
           </div>
           <div>
             <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              SorvetIA
+              Churrosteria
             </CardTitle>
             <CardDescription className="text-base mt-2">
               Sistema de gestão inteligente para sua sorveteria
