@@ -22,48 +22,26 @@ export function AddEmployeeDialog({ open, onOpenChange }: AddEmployeeDialogProps
 
   const addEmployeeMutation = useMutation({
     mutationFn: async () => {
-      // 1. Create user account
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-            phone: phone || null,
-          },
-          emailRedirectTo: `${window.location.origin}/`,
+      // Call the edge function to create the employee
+      const { data, error } = await supabase.functions.invoke('create-employee', {
+        body: {
+          email,
+          password,
+          full_name: fullName,
+          phone: phone || null,
         },
       });
 
-      if (authError) throw authError;
-      if (!authData.user) throw new Error("Erro ao criar usuário");
+      if (error) {
+        console.error("Edge function error:", error);
+        throw new Error(error.message || "Erro ao criar funcionário");
+      }
 
-      // 2. Create employee role
-      const { error: roleError } = await supabase
-        .from("user_roles")
-        .insert({
-          user_id: authData.user.id,
-          role: "employee",
-        });
+      if (data?.error) {
+        throw new Error(data.error);
+      }
 
-      if (roleError) throw roleError;
-
-      // 3. Create default permissions (all false)
-      const { error: permError } = await supabase
-        .from("user_permissions")
-        .insert({
-          user_id: authData.user.id,
-          can_access_sales: false,
-          can_access_products: false,
-          can_access_stock: false,
-          can_access_financial: false,
-          can_access_reports: false,
-          can_access_settings: false,
-        });
-
-      if (permError) throw permError;
-
-      return authData.user;
+      return data;
     },
     onSuccess: async () => {
       toast.success("Funcionário cadastrado com sucesso!");
