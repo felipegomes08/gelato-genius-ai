@@ -7,6 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { startOfDay, endOfDay, subDays, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { useState } from "react";
+import { ExpiringCouponsCard } from "@/components/dashboard/ExpiringCouponsCard";
 
 type PeriodType = 'today' | '7days' | '30days' | 'month' | 'all';
 
@@ -389,6 +390,9 @@ export default function Dashboard() {
             )}
           </CardContent>
         </Card>
+
+        {/* Expiring Coupons Card */}
+        <ExpiringCouponsCard />
 
         {/* Top Products e Top Customers side by side */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
