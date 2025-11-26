@@ -11,19 +11,45 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import logo from "@/assets/logo-churrosteria.png";
+import { usePermissions } from "@/hooks/usePermissions";
 
-const navItems = [
+type PermissionKey = 
+  | "can_access_sales"
+  | "can_access_products"
+  | "can_access_stock"
+  | "can_access_financial"
+  | "can_access_reports"
+  | "can_access_settings";
+
+interface NavItem {
+  to: string;
+  icon: typeof Home;
+  label: string;
+  permission?: PermissionKey;
+  requireMaster?: boolean;
+}
+
+const navItems: NavItem[] = [
   { to: "/", icon: Home, label: "Início" },
-  { to: "/vendas", icon: ShoppingCart, label: "Vendas" },
-  { to: "/comandas", icon: ClipboardList, label: "Comandas" },
-  { to: "/produtos", icon: Package, label: "Produtos" },
-  { to: "/financeiro", icon: DollarSign, label: "Financeiro" },
-  { to: "/clientes", icon: UserCircle, label: "Clientes" },
-  { to: "/funcionarios", icon: Users, label: "Equipe" },
+  { to: "/vendas", icon: ShoppingCart, label: "Vendas", permission: "can_access_sales" },
+  { to: "/comandas", icon: ClipboardList, label: "Comandas", permission: "can_access_sales" },
+  { to: "/produtos", icon: Package, label: "Produtos", permission: "can_access_products" },
+  { to: "/financeiro", icon: DollarSign, label: "Financeiro", permission: "can_access_financial" },
+  { to: "/clientes", icon: UserCircle, label: "Clientes", permission: "can_access_sales" },
+  { to: "/funcionarios", icon: Users, label: "Equipe", requireMaster: true },
 ];
 
 export function AppSidebar() {
   const { open } = useSidebar();
+  const { isMaster, hasPermission, loading } = usePermissions();
+
+  const visibleItems = navItems.filter((item) => {
+    if (loading) return !item.permission && !item.requireMaster;
+    if (!item.permission && !item.requireMaster) return true;
+    if (item.requireMaster) return isMaster;
+    if (item.permission) return hasPermission(item.permission);
+    return false;
+  });
 
   return (
     <Sidebar collapsible="icon">
@@ -46,7 +72,7 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navItems.map((item) => (
+              {visibleItems.map((item) => (
                 <SidebarMenuItem key={item.to}>
                   <SidebarMenuButton asChild>
                     <NavLink 
