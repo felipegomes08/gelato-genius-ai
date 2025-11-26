@@ -250,7 +250,7 @@ export function CloseComandaDialog({ open, onOpenChange, comanda }: CloseComanda
 
       const discountValue = getSuggestedCouponValue();
       const expireDate = new Date();
-      expireDate.setDate(expireDate.getDate() + 30);
+      expireDate.setDate(expireDate.getDate() + 7);
 
       const couponCode = `FIDELIDADE-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
 
