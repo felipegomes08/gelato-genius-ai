@@ -213,7 +213,7 @@ export default function Vendas() {
   const total = Math.max(0, subtotal - totalDiscount);
 
   const getSuggestedCouponValue = () => {
-    return total <= 30 ? 5 : 10;
+    return total > 50 ? 10 : 5;
   };
 
   const paymentMethodLabels = {
