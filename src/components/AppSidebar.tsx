@@ -1,4 +1,4 @@
-import { Home, ShoppingCart, Package, DollarSign, Users, UserCircle, ClipboardList } from "lucide-react";
+import { Home, ShoppingCart, Package, DollarSign, Users, UserCircle, ClipboardList, CalendarCheck } from "lucide-react";
 import { NavLink } from "./NavLink";
 import {
   Sidebar,
@@ -33,6 +33,7 @@ const navItems: NavItem[] = [
   { to: "/", icon: Home, label: "Início" },
   { to: "/vendas", icon: ShoppingCart, label: "Vendas", permission: "can_access_sales" },
   { to: "/comandas", icon: ClipboardList, label: "Comandas", permission: "can_access_sales" },
+  { to: "/tarefas", icon: CalendarCheck, label: "Tarefas" },
   { to: "/produtos", icon: Package, label: "Produtos", permission: "can_access_products" },
   { to: "/financeiro", icon: DollarSign, label: "Financeiro", permission: "can_access_financial" },
   { to: "/clientes", icon: UserCircle, label: "Clientes", permission: "can_access_sales" },

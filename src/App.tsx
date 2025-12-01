@@ -14,6 +14,7 @@ import Produtos from "./pages/Produtos";
 import Financeiro from "./pages/Financeiro";
 import Funcionarios from "./pages/Funcionarios";
 import Clientes from "./pages/Clientes";
+import Tarefas from "./pages/Tarefas";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +34,7 @@ const App = () => (
               <Route path="/" element={<Dashboard />} />
               <Route path="/vendas" element={<PermissionRoute permission="can_access_sales"><Vendas /></PermissionRoute>} />
               <Route path="/comandas" element={<PermissionRoute permission="can_access_sales"><Comandas /></PermissionRoute>} />
+              <Route path="/tarefas" element={<Tarefas />} />
               <Route path="/produtos" element={<PermissionRoute permission="can_access_products"><Produtos /></PermissionRoute>} />
               <Route path="/financeiro" element={<PermissionRoute permission="can_access_financial"><Financeiro /></PermissionRoute>} />
               <Route path="/funcionarios" element={<PermissionRoute requireMaster><Funcionarios /></PermissionRoute>} />
