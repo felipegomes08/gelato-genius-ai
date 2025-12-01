@@ -366,6 +366,98 @@ export type Database = {
           },
         ]
       }
+      task_completions: {
+        Row: {
+          completed_at: string
+          completed_by: string
+          completion_date: string
+          id: string
+          notes: string | null
+          task_id: string
+        }
+        Insert: {
+          completed_at?: string
+          completed_by: string
+          completion_date: string
+          id?: string
+          notes?: string | null
+          task_id: string
+        }
+        Update: {
+          completed_at?: string
+          completed_by?: string
+          completion_date?: string
+          id?: string
+          notes?: string | null
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_completions_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tasks: {
+        Row: {
+          assigned_to: string
+          created_at: string
+          created_by: string
+          description: string | null
+          due_date: string | null
+          id: string
+          is_active: boolean
+          is_recurring: boolean
+          recurrence_day_of_month: number | null
+          recurrence_day_of_week: number | null
+          recurrence_end_date: string | null
+          recurrence_start_date: string | null
+          recurrence_type: string | null
+          recurrence_week_parity: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to: string
+          created_at?: string
+          created_by: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          is_active?: boolean
+          is_recurring?: boolean
+          recurrence_day_of_month?: number | null
+          recurrence_day_of_week?: number | null
+          recurrence_end_date?: string | null
+          recurrence_start_date?: string | null
+          recurrence_type?: string | null
+          recurrence_week_parity?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          is_active?: boolean
+          is_recurring?: boolean
+          recurrence_day_of_month?: number | null
+          recurrence_day_of_week?: number | null
+          recurrence_end_date?: string | null
+          recurrence_start_date?: string | null
+          recurrence_type?: string | null
+          recurrence_week_parity?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_permissions: {
         Row: {
           can_access_financial: boolean
