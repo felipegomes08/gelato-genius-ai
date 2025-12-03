@@ -1,0 +1,1 @@
+CREATE POLICY "users_create_completions" ON public.task_completions FOR INSERT WITH CHECK (completed_by = auth.uid())
