@@ -19,7 +19,8 @@ type PermissionKey =
   | "can_access_stock"
   | "can_access_financial"
   | "can_access_reports"
-  | "can_access_settings";
+  | "can_access_settings"
+  | "can_access_tasks";
 
 interface NavItem {
   to: string;
@@ -33,7 +34,7 @@ const navItems: NavItem[] = [
   { to: "/", icon: Home, label: "Início" },
   { to: "/vendas", icon: ShoppingCart, label: "Vendas", permission: "can_access_sales" },
   { to: "/comandas", icon: ClipboardList, label: "Comandas", permission: "can_access_sales" },
-  { to: "/tarefas", icon: CalendarCheck, label: "Tarefas" },
+  { to: "/tarefas", icon: CalendarCheck, label: "Tarefas", permission: "can_access_tasks" },
   { to: "/produtos", icon: Package, label: "Produtos", permission: "can_access_products" },
   { to: "/financeiro", icon: DollarSign, label: "Financeiro", permission: "can_access_financial" },
   { to: "/clientes", icon: UserCircle, label: "Clientes", permission: "can_access_sales" },

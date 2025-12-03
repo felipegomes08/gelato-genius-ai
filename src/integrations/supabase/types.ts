@@ -466,6 +466,7 @@ export type Database = {
           can_access_sales: boolean
           can_access_settings: boolean
           can_access_stock: boolean
+          can_access_tasks: boolean
           created_at: string
           id: string
           updated_at: string
@@ -478,6 +479,7 @@ export type Database = {
           can_access_sales?: boolean
           can_access_settings?: boolean
           can_access_stock?: boolean
+          can_access_tasks?: boolean
           created_at?: string
           id?: string
           updated_at?: string
@@ -490,6 +492,7 @@ export type Database = {
           can_access_sales?: boolean
           can_access_settings?: boolean
           can_access_stock?: boolean
+          can_access_tasks?: boolean
           created_at?: string
           id?: string
           updated_at?: string

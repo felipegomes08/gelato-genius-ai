@@ -31,6 +31,7 @@ interface Employee {
     can_access_financial: boolean;
     can_access_reports: boolean;
     can_access_settings: boolean;
+    can_access_tasks: boolean;
   }> | null;
 }
 

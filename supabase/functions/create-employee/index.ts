@@ -97,6 +97,7 @@ serve(async (req) => {
         can_access_financial: false,
         can_access_reports: false,
         can_access_settings: false,
+        can_access_tasks: false,
       });
 
     if (permError) {

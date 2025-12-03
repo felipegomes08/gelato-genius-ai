@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2, ShoppingCart, Package, BarChart3, DollarSign, FileText, Settings } from "lucide-react";
+import { Loader2, ShoppingCart, Package, BarChart3, DollarSign, FileText, Settings, CalendarCheck } from "lucide-react";
 
 interface Employee {
   id: string;
@@ -18,6 +18,7 @@ interface Employee {
     can_access_financial: boolean;
     can_access_reports: boolean;
     can_access_settings: boolean;
+    can_access_tasks: boolean;
   }> | null;
 }
 
@@ -34,6 +35,7 @@ const permissions = [
   { key: "can_access_financial", label: "Financeiro", icon: DollarSign },
   { key: "can_access_reports", label: "Relatórios", icon: FileText },
   { key: "can_access_settings", label: "Configurações", icon: Settings },
+  { key: "can_access_tasks", label: "Tarefas", icon: CalendarCheck },
 ] as const;
 
 export function EditPermissionsDialog({ employee, open, onOpenChange }: EditPermissionsDialogProps) {
@@ -48,6 +50,7 @@ export function EditPermissionsDialog({ employee, open, onOpenChange }: EditPerm
       can_access_financial: false,
       can_access_reports: false,
       can_access_settings: false,
+      can_access_tasks: false,
     };
 
     if (employee.user_permissions?.[0]) {
@@ -59,6 +62,7 @@ export function EditPermissionsDialog({ employee, open, onOpenChange }: EditPerm
         can_access_financial: currentPermissions.can_access_financial ?? false,
         can_access_reports: currentPermissions.can_access_reports ?? false,
         can_access_settings: currentPermissions.can_access_settings ?? false,
+        can_access_tasks: currentPermissions.can_access_tasks ?? false,
       });
     } else {
       setPermissionStates(defaultPermissions);
@@ -77,6 +81,7 @@ export function EditPermissionsDialog({ employee, open, onOpenChange }: EditPerm
           can_access_financial: permissionStates.can_access_financial || false,
           can_access_reports: permissionStates.can_access_reports || false,
           can_access_settings: permissionStates.can_access_settings || false,
+          can_access_tasks: permissionStates.can_access_tasks || false,
         }, {
           onConflict: 'user_id'
         });
