@@ -1,0 +1,1 @@
+CREATE POLICY "masters_manage_tasks" ON public.tasks FOR ALL USING (has_role(auth.uid(), 'master'::app_role)) WITH CHECK (has_role(auth.uid(), 'master'::app_role))
