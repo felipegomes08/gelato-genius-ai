@@ -1,0 +1,1 @@
+CREATE POLICY "users_delete_completions" ON public.task_completions FOR DELETE USING (completed_by = auth.uid())
