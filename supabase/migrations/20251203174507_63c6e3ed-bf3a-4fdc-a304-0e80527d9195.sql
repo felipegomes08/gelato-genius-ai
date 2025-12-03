@@ -1,0 +1,1 @@
+CREATE POLICY "masters_view_completions" ON public.task_completions FOR SELECT USING (has_role(auth.uid(), 'master'::app_role))
