@@ -1,0 +1,1 @@
+CREATE POLICY "users_view_own_completions" ON public.task_completions FOR SELECT USING (completed_by = auth.uid())
