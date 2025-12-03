@@ -1,0 +1,1 @@
+CREATE POLICY "users_view_own_tasks" ON public.tasks FOR SELECT USING (assigned_to = auth.uid())
