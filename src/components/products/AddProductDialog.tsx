@@ -1,7 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { useForm } from "react-hook-form";
@@ -12,15 +11,15 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { CurrencyInput } from "@/components/ui/currency-input";
+import { unformatCurrency } from "@/lib/formatters";
 
 const productSchema = z.object({
   name: z.string()
     .trim()
     .min(1, "Nome é obrigatório")
     .max(100, "Nome deve ter no máximo 100 caracteres"),
-  price: z.string()
-    .optional()
-    .refine((val) => !val || (!isNaN(Number(val)) && Number(val) > 0), "Preço deve ser maior que zero"),
+  price: z.string().optional(),
   category: z.string()
     .trim()
     .min(1, "Categoria é obrigatória")
@@ -30,12 +29,8 @@ const productSchema = z.object({
     .max(500, "Descrição deve ter no máximo 500 caracteres")
     .optional(),
   controls_stock: z.boolean().default(true),
-  current_stock: z.string()
-    .optional()
-    .refine((val) => !val || (!isNaN(Number(val)) && Number(val) >= 0), "Estoque deve ser um número positivo"),
-  low_stock_threshold: z.string()
-    .optional()
-    .refine((val) => !val || (!isNaN(Number(val)) && Number(val) >= 0), "Limiar deve ser um número positivo"),
+  current_stock: z.string().optional(),
+  low_stock_threshold: z.string().optional(),
 });
 
 type ProductFormData = z.infer<typeof productSchema>;
@@ -72,9 +67,11 @@ export function AddProductDialog({ open, onOpenChange }: AddProductDialogProps) 
         return;
       }
 
+      const priceValue = data.price ? unformatCurrency(data.price) : null;
+
       const { error } = await supabase.from("products").insert({
         name: data.name,
-        price: data.price ? Number(data.price) : null,
+        price: priceValue && priceValue > 0 ? priceValue : null,
         category: data.category,
         description: data.description || null,
         controls_stock: data.controls_stock,
@@ -125,11 +122,10 @@ export function AddProductDialog({ open, onOpenChange }: AddProductDialogProps) 
                   <FormItem>
                     <FormLabel>Preço (R$) - Opcional</FormLabel>
                     <FormControl>
-                      <Input
-                        type="number"
-                        step="0.01"
+                      <CurrencyInput
                         placeholder="Deixe vazio para produtos no peso"
-                        {...field}
+                        value={field.value || ""}
+                        onChange={field.onChange}
                       />
                     </FormControl>
                     <FormMessage />

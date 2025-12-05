@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { CurrencyInput } from "@/components/ui/currency-input";
+import { unformatCurrency, formatNumberToBRL } from "@/lib/formatters";
 
 import { SelectCustomerDialog } from "@/components/sales/SelectCustomerDialog";
 import { ManualDiscountDialog } from "@/components/sales/ManualDiscountDialog";
@@ -616,21 +618,34 @@ export default function Vendas() {
                       <div className="mb-2">
                         {editingPriceId === item.cartItemId ? (
                           <div className="flex gap-2">
-                            <Input
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              placeholder="Digite o preço (R$)"
+                            <CurrencyInput
+                              placeholder="Digite o preço"
                               value={tempPrice}
-                              onChange={(e) => setTempPrice(e.target.value)}
+                              onChange={setTempPrice}
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter') {
-                                  updateCustomPrice(item.cartItemId);
+                                  const priceValue = unformatCurrency(tempPrice);
+                                  if (priceValue > 0) {
+                                    setCart(cart.map((i) =>
+                                      i.cartItemId === item.cartItemId
+                                        ? { ...i, customPrice: priceValue }
+                                        : i
+                                    ));
+                                    setEditingPriceId(null);
+                                    setTempPrice("");
+                                  }
                                 }
                               }}
                               onBlur={() => {
-                                if (tempPrice && parseFloat(tempPrice) > 0) {
-                                  updateCustomPrice(item.cartItemId);
+                                const priceValue = unformatCurrency(tempPrice);
+                                if (priceValue > 0) {
+                                  setCart(cart.map((i) =>
+                                    i.cartItemId === item.cartItemId
+                                      ? { ...i, customPrice: priceValue }
+                                      : i
+                                  ));
+                                  setEditingPriceId(null);
+                                  setTempPrice("");
                                 }
                               }}
                               className="h-8"
@@ -638,7 +653,18 @@ export default function Vendas() {
                             />
                             <Button
                               size="sm"
-                              onClick={() => updateCustomPrice(item.cartItemId)}
+                              onClick={() => {
+                                const priceValue = unformatCurrency(tempPrice);
+                                if (priceValue > 0) {
+                                  setCart(cart.map((i) =>
+                                    i.cartItemId === item.cartItemId
+                                      ? { ...i, customPrice: priceValue }
+                                      : i
+                                  ));
+                                  setEditingPriceId(null);
+                                  setTempPrice("");
+                                }
+                              }}
                               className="h-8"
                             >
                               OK
@@ -650,12 +676,12 @@ export default function Vendas() {
                             size="sm"
                             onClick={() => {
                               setEditingPriceId(item.cartItemId);
-                              setTempPrice(item.customPrice?.toString() || "");
+                              setTempPrice(item.customPrice ? formatNumberToBRL(item.customPrice) : "");
                             }}
                             className="w-full h-8 text-xs"
                           >
                             {item.customPrice && item.customPrice > 0
-                              ? `R$ ${item.customPrice.toFixed(2)}`
+                              ? `R$ ${formatNumberToBRL(item.customPrice)}`
                               : "⚠️ Definir Preço"}
                           </Button>
                         )}

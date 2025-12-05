@@ -12,6 +12,8 @@ import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { CurrencyInput } from "@/components/ui/currency-input";
+import { unformatCurrency } from "@/lib/formatters";
 
 interface AddCouponDialogProps {
   customerId: string;
@@ -48,13 +50,17 @@ export function AddCouponDialog({ customerId, customerName, open, onOpenChange }
 
       const { data: { user } } = await supabase.auth.getUser();
       
+      const value = discountType === "fixed" 
+        ? unformatCurrency(discountValue) 
+        : Number(discountValue);
+
       const { data, error } = await supabase
         .from("coupons")
         .insert({
           customer_id: customerId,
           code: code.toUpperCase(),
           discount_type: discountType,
-          discount_value: Number(discountValue),
+          discount_value: value,
           expire_at: expireDate.toISOString(),
           created_by: user?.id,
         })
@@ -86,12 +92,16 @@ export function AddCouponDialog({ customerId, customerName, open, onOpenChange }
       return;
     }
     
-    if (!discountValue || Number(discountValue) <= 0) {
+    const value = discountType === "fixed" 
+      ? unformatCurrency(discountValue) 
+      : Number(discountValue);
+
+    if (!value || value <= 0) {
       toast.error("Digite um valor válido para o desconto");
       return;
     }
 
-    if (discountType === "percentage" && Number(discountValue) > 100) {
+    if (discountType === "percentage" && value > 100) {
       toast.error("Desconto percentual não pode ser maior que 100%");
       return;
     }
@@ -136,7 +146,10 @@ export function AddCouponDialog({ customerId, customerName, open, onOpenChange }
             <Label>Tipo de Desconto</Label>
             <RadioGroup
               value={discountType}
-              onValueChange={(value) => setDiscountType(value as "percentage" | "fixed")}
+              onValueChange={(value) => {
+                setDiscountType(value as "percentage" | "fixed");
+                setDiscountValue("");
+              }}
             >
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="fixed" id="fixed" />
@@ -157,17 +170,26 @@ export function AddCouponDialog({ customerId, customerName, open, onOpenChange }
             <Label htmlFor="discount">
               {discountType === "percentage" ? "Desconto (%)" : "Desconto (R$)"}
             </Label>
-            <Input
-              id="discount"
-              type="number"
-              step={discountType === "fixed" ? "0.01" : "1"}
-              min="0"
-              max={discountType === "percentage" ? "100" : undefined}
-              value={discountValue}
-              onChange={(e) => setDiscountValue(e.target.value)}
-              placeholder={discountType === "percentage" ? "Ex: 10" : "Ex: 50.00"}
-              required
-            />
+            {discountType === "fixed" ? (
+              <CurrencyInput
+                id="discount"
+                value={discountValue}
+                onChange={setDiscountValue}
+                placeholder="Ex: 50,00"
+              />
+            ) : (
+              <Input
+                id="discount"
+                type="number"
+                step="1"
+                min="0"
+                max="100"
+                value={discountValue}
+                onChange={(e) => setDiscountValue(e.target.value)}
+                placeholder="Ex: 10"
+                required
+              />
+            )}
           </div>
 
           <div className="space-y-2">

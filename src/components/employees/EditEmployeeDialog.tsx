@@ -2,6 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PhoneInput } from "@/components/ui/phone-input";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -76,11 +77,10 @@ export function EditEmployeeDialog({ employee, open, onOpenChange }: EditEmploye
           </div>
           <div className="space-y-2">
             <Label htmlFor="edit-phone">Telefone</Label>
-            <Input
+            <PhoneInput
               id="edit-phone"
-              type="tel"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={setPhone}
               placeholder="(00) 00000-0000"
             />
           </div>

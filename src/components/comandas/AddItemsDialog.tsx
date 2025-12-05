@@ -14,6 +14,8 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Search, Plus, Minus, X, ShoppingCart, Loader2 } from "lucide-react";
+import { CurrencyInput } from "@/components/ui/currency-input";
+import { unformatCurrency, formatNumberToBRL } from "@/lib/formatters";
 
 interface AddItemsDialogProps {
   open: boolean;
@@ -265,20 +267,22 @@ export function AddItemsDialog({ open, onOpenChange, comanda }: AddItemsDialogPr
                   {/* Campo de preço customizado para produtos sem preço */}
                   {item.price === null && editingPrice === item.cartItemId ? (
                     <div className="mb-2">
-                      <Input
-                        type="number"
-                        step="0.01"
-                        placeholder="Digite o preço (R$)"
+                      <CurrencyInput
+                        placeholder="Digite o preço"
                         value={tempPrice}
-                        onChange={(e) => setTempPrice(e.target.value)}
+                        onChange={setTempPrice}
                         onBlur={() => {
-                          if (tempPrice && Number(tempPrice) > 0) {
-                            updateCustomPrice(item.cartItemId, Number(tempPrice));
+                          const priceValue = unformatCurrency(tempPrice);
+                          if (priceValue > 0) {
+                            updateCustomPrice(item.cartItemId, priceValue);
                           }
                         }}
                         onKeyDown={(e) => {
-                          if (e.key === 'Enter' && tempPrice && Number(tempPrice) > 0) {
-                            updateCustomPrice(item.cartItemId, Number(tempPrice));
+                          if (e.key === 'Enter') {
+                            const priceValue = unformatCurrency(tempPrice);
+                            if (priceValue > 0) {
+                              updateCustomPrice(item.cartItemId, priceValue);
+                            }
                           }
                         }}
                         autoFocus
@@ -296,6 +300,18 @@ export function AddItemsDialog({ open, onOpenChange, comanda }: AddItemsDialogPr
                       }}
                     >
                       ⚠️ Definir Preço
+                    </Button>
+                  ) : item.price === null && item.customPrice ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mb-2 w-full text-xs"
+                      onClick={() => {
+                        setEditingPrice(item.cartItemId);
+                        setTempPrice(formatNumberToBRL(item.customPrice));
+                      }}
+                    >
+                      R$ {formatNumberToBRL(item.customPrice)}
                     </Button>
                   ) : null}
 

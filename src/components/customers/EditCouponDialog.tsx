@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -12,6 +12,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { CurrencyInput } from "@/components/ui/currency-input";
+import { unformatCurrency, formatNumberToBRL } from "@/lib/formatters";
 
 interface Coupon {
   id: string;
@@ -30,25 +32,40 @@ interface EditCouponDialogProps {
 }
 
 export function EditCouponDialog({ coupon, customerName, open, onOpenChange }: EditCouponDialogProps) {
-  const [code, setCode] = useState(coupon?.code || "");
-  const [discountType, setDiscountType] = useState(coupon?.discount_type || "percentage");
-  const [discountValue, setDiscountValue] = useState(coupon?.discount_value.toString() || "");
-  const [expireDate, setExpireDate] = useState<Date | undefined>(
-    coupon ? new Date(coupon.expire_at) : undefined
-  );
+  const [code, setCode] = useState("");
+  const [discountType, setDiscountType] = useState("fixed");
+  const [discountValue, setDiscountValue] = useState("");
+  const [expireDate, setExpireDate] = useState<Date | undefined>(undefined);
 
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (coupon) {
+      setCode(coupon.code);
+      setDiscountType(coupon.discount_type);
+      if (coupon.discount_type === "fixed") {
+        setDiscountValue(formatNumberToBRL(coupon.discount_value));
+      } else {
+        setDiscountValue(coupon.discount_value.toString());
+      }
+      setExpireDate(new Date(coupon.expire_at));
+    }
+  }, [coupon]);
 
   const updateMutation = useMutation({
     mutationFn: async () => {
       if (!coupon || !expireDate) return;
+
+      const value = discountType === "fixed" 
+        ? unformatCurrency(discountValue) 
+        : parseFloat(discountValue);
 
       const { error } = await supabase
         .from("coupons")
         .update({
           code: code.toUpperCase(),
           discount_type: discountType,
-          discount_value: parseFloat(discountValue),
+          discount_value: value,
           expire_at: expireDate.toISOString(),
         })
         .eq("id", coupon.id);
@@ -73,12 +90,16 @@ export function EditCouponDialog({ coupon, customerName, open, onOpenChange }: E
       return;
     }
 
-    if (!discountValue || parseFloat(discountValue) <= 0) {
+    const value = discountType === "fixed" 
+      ? unformatCurrency(discountValue) 
+      : parseFloat(discountValue);
+
+    if (!value || value <= 0) {
       toast.error("Digite um valor de desconto válido");
       return;
     }
 
-    if (discountType === "percentage" && parseFloat(discountValue) > 100) {
+    if (discountType === "percentage" && value > 100) {
       toast.error("Desconto percentual não pode ser maior que 100%");
       return;
     }
@@ -90,16 +111,6 @@ export function EditCouponDialog({ coupon, customerName, open, onOpenChange }: E
 
     updateMutation.mutate();
   };
-
-  // Resetar form quando o cupom mudar
-  useState(() => {
-    if (coupon) {
-      setCode(coupon.code);
-      setDiscountType(coupon.discount_type);
-      setDiscountValue(coupon.discount_value.toString());
-      setExpireDate(new Date(coupon.expire_at));
-    }
-  });
 
   if (!coupon) return null;
 
@@ -129,7 +140,13 @@ export function EditCouponDialog({ coupon, customerName, open, onOpenChange }: E
 
             <div className="space-y-2">
               <Label>Tipo de Desconto</Label>
-              <RadioGroup value={discountType} onValueChange={setDiscountType}>
+              <RadioGroup 
+                value={discountType} 
+                onValueChange={(value) => {
+                  setDiscountType(value);
+                  setDiscountValue("");
+                }}
+              >
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="fixed" id="edit-fixed" />
                   <Label htmlFor="edit-fixed" className="font-normal">Valor Fixo (R$)</Label>
@@ -145,16 +162,25 @@ export function EditCouponDialog({ coupon, customerName, open, onOpenChange }: E
               <Label htmlFor="value">
                 {discountType === "percentage" ? "Desconto (%)" : "Valor (R$)"}
               </Label>
-              <Input
-                id="value"
-                type="number"
-                step="0.01"
-                min="0"
-                max={discountType === "percentage" ? "100" : undefined}
-                value={discountValue}
-                onChange={(e) => setDiscountValue(e.target.value)}
-                placeholder={discountType === "percentage" ? "Ex: 10" : "Ex: 50.00"}
-              />
+              {discountType === "fixed" ? (
+                <CurrencyInput
+                  id="value"
+                  value={discountValue}
+                  onChange={setDiscountValue}
+                  placeholder="Ex: 50,00"
+                />
+              ) : (
+                <Input
+                  id="value"
+                  type="number"
+                  step="1"
+                  min="0"
+                  max="100"
+                  value={discountValue}
+                  onChange={(e) => setDiscountValue(e.target.value)}
+                  placeholder="Ex: 10"
+                />
+              )}
             </div>
 
             <div className="space-y-2">
