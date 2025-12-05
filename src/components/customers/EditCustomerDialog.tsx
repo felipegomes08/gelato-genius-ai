@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { PhoneInput } from "@/components/ui/phone-input";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -62,7 +63,11 @@ export function EditCustomerDialog({ customer, open, onOpenChange }: EditCustome
     },
     onError: (error: any) => {
       console.error("Erro ao atualizar cliente:", error);
-      toast.error(error.message || "Erro ao atualizar cliente");
+      if (error.code === "23505" || error.message?.includes("customers_phone_unique")) {
+        toast.error("Já existe um cliente com este telefone");
+      } else {
+        toast.error(error.message || "Erro ao atualizar cliente");
+      }
     },
   });
 
@@ -90,11 +95,10 @@ export function EditCustomerDialog({ customer, open, onOpenChange }: EditCustome
           </div>
           <div className="space-y-2">
             <Label htmlFor="edit-phone">Telefone</Label>
-            <Input
+            <PhoneInput
               id="edit-phone"
-              type="tel"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={setPhone}
               placeholder="(11) 98765-4321"
             />
           </div>

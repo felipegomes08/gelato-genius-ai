@@ -8,6 +8,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { unformatCurrency, formatNumberToBRL } from "@/lib/formatters";
 import {
   Dialog,
   DialogContent,
@@ -38,6 +39,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Textarea } from "@/components/ui/textarea";
+import { CurrencyInput } from "@/components/ui/currency-input";
 
 const formSchema = z.object({
   transaction_type: z.enum(["income", "expense"], {
@@ -48,12 +50,7 @@ const formSchema = z.object({
     .min(3, "Descrição deve ter no mínimo 3 caracteres")
     .max(100, "Descrição deve ter no máximo 100 caracteres"),
   category: z.string().min(1, "Selecione uma categoria"),
-  amount: z
-    .string()
-    .min(1, "Digite o valor")
-    .refine((val) => !isNaN(Number(val)) && Number(val) > 0, {
-      message: "Valor deve ser maior que zero",
-    }),
+  amount: z.string().min(1, "Digite o valor"),
   payment_method: z.string().min(1, "Forma de pagamento é obrigatória"),
   transaction_date: z.date({
     required_error: "Selecione uma data",
@@ -121,7 +118,7 @@ export function EditTransactionDialog({
         transaction_type: transaction.transaction_type,
         description: transaction.description,
         category: transaction.category,
-        amount: transaction.amount.toString(),
+        amount: formatNumberToBRL(transaction.amount),
         payment_method: transaction.payment_method || "N/A",
         transaction_date: new Date(transaction.transaction_date),
         notes: transaction.notes || "",
@@ -138,13 +135,15 @@ export function EditTransactionDialog({
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
+      const amountValue = unformatCurrency(values.amount);
+
       const { error } = await supabase
         .from("financial_transactions")
         .update({
           transaction_type: values.transaction_type,
           description: values.description,
           category: values.category,
-          amount: Number(values.amount),
+          amount: amountValue,
           payment_method: values.payment_method,
           transaction_date: values.transaction_date.toISOString(),
           notes: values.notes || null,
@@ -247,11 +246,10 @@ export function EditTransactionDialog({
                   <FormItem>
                     <FormLabel>Valor (R$)</FormLabel>
                     <FormControl>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        placeholder="0.00"
-                        {...field}
+                      <CurrencyInput
+                        placeholder="0,00"
+                        value={field.value}
+                        onChange={field.onChange}
                       />
                     </FormControl>
                     <FormMessage />

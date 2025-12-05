@@ -8,6 +8,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { unformatCurrency } from "@/lib/formatters";
 import {
   Dialog,
   DialogContent,
@@ -39,6 +40,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Textarea } from "@/components/ui/textarea";
+import { CurrencyInput } from "@/components/ui/currency-input";
 
 const formSchema = z.object({
   transaction_type: z.enum(["income", "expense"], {
@@ -56,11 +58,7 @@ const formSchema = z.object({
     .max(100, "Categoria deve ter no máximo 100 caracteres"),
   amount: z
     .string()
-    .min(1, "Valor é obrigatório")
-    .refine(
-      (val) => !isNaN(Number(val)) && Number(val) > 0,
-      "Valor deve ser maior que zero"
-    ),
+    .min(1, "Valor é obrigatório"),
   payment_method: z.string().min(1, "Forma de pagamento é obrigatória"),
   transaction_date: z.date({
     required_error: "Data é obrigatória",
@@ -129,11 +127,21 @@ export function AddTransactionDialog({
         return;
       }
 
+      const amountValue = unformatCurrency(values.amount);
+      if (amountValue <= 0) {
+        toast({
+          title: "Valor inválido",
+          description: "O valor deve ser maior que zero.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const { error } = await supabase.from("financial_transactions").insert({
         transaction_type: values.transaction_type,
         description: values.description,
         category: values.category,
-        amount: Number(values.amount),
+        amount: amountValue,
         payment_method: values.payment_method,
         transaction_date: values.transaction_date.toISOString(),
         notes: values.notes || null,
@@ -249,12 +257,10 @@ export function AddTransactionDialog({
                 <FormItem>
                   <FormLabel>Valor (R$)</FormLabel>
                   <FormControl>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      placeholder="0.00"
-                      {...field}
+                    <CurrencyInput
+                      placeholder="0,00"
+                      value={field.value}
+                      onChange={field.onChange}
                     />
                   </FormControl>
                   <FormMessage />

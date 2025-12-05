@@ -9,6 +9,8 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
+import { CurrencyInput } from "@/components/ui/currency-input";
+import { unformatCurrency, formatNumberToBRL } from "@/lib/formatters";
 
 interface Product {
   id: string;
@@ -44,7 +46,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
   useEffect(() => {
     if (product) {
       setName(product.name);
-      setPrice(product.price ? product.price.toString() : "");
+      setPrice(product.price ? formatNumberToBRL(product.price) : "");
       setCategory(product.category);
       setDescription(product.description || "");
       setControlsStock(product.controls_stock);
@@ -60,11 +62,13 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
     setIsLoading(true);
 
     try {
+      const priceValue = price ? unformatCurrency(price) : null;
+
       const { error } = await supabase
         .from("products")
         .update({
           name,
-          price: price ? parseFloat(price) : null,
+          price: priceValue && priceValue > 0 ? priceValue : null,
           category,
           description: description || null,
           controls_stock: controlsStock,
@@ -114,13 +118,10 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
 
           <div className="space-y-2">
             <Label htmlFor="edit-price">Preço (R$) - Opcional</Label>
-            <Input
+            <CurrencyInput
               id="edit-price"
-              type="number"
-              step="0.01"
-              min="0"
               value={price}
-              onChange={(e) => setPrice(e.target.value)}
+              onChange={setPrice}
               placeholder="Deixe vazio para produtos no peso"
             />
           </div>

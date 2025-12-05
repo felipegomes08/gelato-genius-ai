@@ -20,6 +20,9 @@ import { Search, User, CalendarIcon, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { PhoneInput } from "@/components/ui/phone-input";
+import { CurrencyInput } from "@/components/ui/currency-input";
+import { unformatCurrency, formatPhone } from "@/lib/formatters";
 
 interface Customer {
   id: string;
@@ -174,13 +177,17 @@ export function SelectCustomerDialog({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
+      const value = couponType === "fixed" 
+        ? unformatCurrency(couponValue) 
+        : parseFloat(couponValue);
+
       const { data, error } = await supabase
         .from("coupons")
         .insert({
           customer_id: customerId,
           code: couponCode,
           discount_type: couponType,
-          discount_value: parseFloat(couponValue),
+          discount_value: value,
           expire_at: couponExpireDate!.toISOString(),
           created_by: user.id,
         })
@@ -219,13 +226,17 @@ export function SelectCustomerDialog({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
+      const value = existingCouponType === "fixed" 
+        ? unformatCurrency(existingCouponValue) 
+        : parseFloat(existingCouponValue);
+
       const { data, error } = await supabase
         .from("coupons")
         .insert({
           customer_id: selectedCustomerId,
           code: existingCouponCode,
           discount_type: existingCouponType,
-          discount_value: parseFloat(existingCouponValue),
+          discount_value: value,
           expire_at: existingCouponExpireDate!.toISOString(),
           created_by: user.id,
         })
@@ -430,15 +441,23 @@ export function SelectCustomerDialog({
                       </Button>
                     </div>
                   </div>
-                  <div>
-                    <Label>Valor</Label>
-                    <Input
-                      type="number"
-                      value={existingCouponValue}
-                      onChange={(e) => setExistingCouponValue(e.target.value)}
-                      placeholder={existingCouponType === "percentage" ? "10" : "15.00"}
-                    />
-                  </div>
+                    <div>
+                      <Label>Valor</Label>
+                      {existingCouponType === "fixed" ? (
+                        <CurrencyInput
+                          value={existingCouponValue}
+                          onChange={setExistingCouponValue}
+                          placeholder="15,00"
+                        />
+                      ) : (
+                        <Input
+                          type="number"
+                          value={existingCouponValue}
+                          onChange={(e) => setExistingCouponValue(e.target.value)}
+                          placeholder="10"
+                        />
+                      )}
+                    </div>
                 </div>
 
                 <div>
@@ -562,11 +581,11 @@ export function SelectCustomerDialog({
 
           <div>
             <Label htmlFor="new-customer-phone">Telefone</Label>
-            <Input
+            <PhoneInput
               id="new-customer-phone"
               placeholder="(11) 98765-4321"
               value={newCustomerPhone}
-              onChange={(e) => setNewCustomerPhone(e.target.value)}
+              onChange={setNewCustomerPhone}
             />
           </div>
 
@@ -633,12 +652,20 @@ export function SelectCustomerDialog({
                     </div>
                     <div>
                       <Label>Valor</Label>
-                      <Input
-                        type="number"
-                        value={couponValue}
-                        onChange={(e) => setCouponValue(e.target.value)}
-                        placeholder={couponType === "percentage" ? "10" : "15.00"}
-                      />
+                      {couponType === "fixed" ? (
+                        <CurrencyInput
+                          value={couponValue}
+                          onChange={setCouponValue}
+                          placeholder="15,00"
+                        />
+                      ) : (
+                        <Input
+                          type="number"
+                          value={couponValue}
+                          onChange={(e) => setCouponValue(e.target.value)}
+                          placeholder="10"
+                        />
+                      )}
                     </div>
                   </div>
 
