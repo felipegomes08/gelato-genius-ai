@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { User, LogOut, Key } from "lucide-react";
+import { User, LogOut, Key, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
 import {
@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { useAuth } from "@/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
 import { ChangePasswordDialog } from "./ChangePasswordDialog";
 import logo from "@/assets/logo-churrosteria.png";
 
@@ -20,6 +21,7 @@ interface HeaderProps {
 
 export const Header = ({ title = "Churrosteria" }: HeaderProps) => {
   const { user, signOut } = useAuth();
+  const { isMaster } = usePermissions();
   const navigate = useNavigate();
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
 
@@ -46,6 +48,12 @@ export const Header = ({ title = "Churrosteria" }: HeaderProps) => {
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>{user?.email}</DropdownMenuLabel>
             <DropdownMenuSeparator />
+            {isMaster && (
+              <DropdownMenuItem onClick={() => navigate("/configuracoes")} className="cursor-pointer">
+                <Settings className="h-4 w-4 mr-2" />
+                Configurações Gerais
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem onClick={() => setChangePasswordOpen(true)} className="cursor-pointer">
               <Key className="h-4 w-4 mr-2" />
               Alterar Senha
