@@ -20,6 +20,7 @@ import { SelectCustomerDialog } from "@/components/sales/SelectCustomerDialog";
 import { generateCouponMessage } from "@/lib/couponMessages";
 import { toast } from "sonner";
 import { Percent, Loader2, User } from "lucide-react";
+import { useAppSettings } from "@/hooks/useAppSettings";
 
 interface Customer {
   id: string;
@@ -52,6 +53,7 @@ export function CloseComandaDialog({ open, onOpenChange, comanda }: CloseComanda
   const [pendingWhatsAppData, setPendingWhatsAppData] = useState<any>(null);
 
   const queryClient = useQueryClient();
+  const { settings, getSuggestedCouponValue, getMinPurchase } = useAppSettings();
 
   // Buscar cupons ativos do cliente
   const { data: coupons } = useQuery({
@@ -105,9 +107,6 @@ export function CloseComandaDialog({ open, onOpenChange, comanda }: CloseComanda
   const totalDiscount = couponDiscount + manualDiscountAmount;
   const total = Math.max(0, subtotal - totalDiscount);
 
-  const getSuggestedCouponValue = () => {
-    return total > 50 ? 10 : 5;
-  };
 
   const closeComandaMutation = useMutation({
     mutationFn: async () => {
@@ -248,7 +247,7 @@ export function CloseComandaDialog({ open, onOpenChange, comanda }: CloseComanda
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
-      const discountValue = getSuggestedCouponValue();
+      const discountValue = getSuggestedCouponValue(total);
       const expireDate = new Date();
       expireDate.setDate(expireDate.getDate() + 7);
 
@@ -278,7 +277,13 @@ export function CloseComandaDialog({ open, onOpenChange, comanda }: CloseComanda
       const message = generateCouponMessage(
         selectedCustomer.name,
         discountValue,
-        expireDate.toISOString()
+        expireDate.toISOString(),
+        {
+          message5: settings.couponMessage5,
+          message10: settings.couponMessage10,
+          minPurchase5: settings.couponRules.minPurchase5,
+          minPurchase10: settings.couponRules.minPurchase10,
+        }
       );
 
       return {
@@ -478,7 +483,7 @@ export function CloseComandaDialog({ open, onOpenChange, comanda }: CloseComanda
         open={loyaltyCouponDialogOpen}
         onOpenChange={setLoyaltyCouponDialogOpen}
         customerName={selectedCustomer?.name || "Cliente"}
-        suggestedValue={getSuggestedCouponValue()}
+        suggestedValue={getSuggestedCouponValue(total)}
         onConfirmWithCoupon={handleConfirmWithCoupon}
         onConfirmWithoutCoupon={handleConfirmWithoutCoupon}
       />

@@ -17,6 +17,7 @@ import { PaymentMethodSelector } from "@/components/sales/PaymentMethodSelector"
 import { Search, Plus, Minus, X, User, Percent, Sparkles, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 import { generateCouponMessage } from "@/lib/couponMessages";
+import { useAppSettings } from "@/hooks/useAppSettings";
 
 interface CartItem {
   id: string;
@@ -69,6 +70,7 @@ export default function Vendas() {
   } | null>(null);
 
   const queryClient = useQueryClient();
+  const { settings, getSuggestedCouponValue, getMinPurchase } = useAppSettings();
 
   // Carregar produtos do banco
   const { data: products, isLoading } = useQuery({
@@ -214,9 +216,6 @@ export default function Vendas() {
   const totalDiscount = couponDiscount + manualDiscountAmount;
   const total = Math.max(0, subtotal - totalDiscount);
 
-  const getSuggestedCouponValue = () => {
-    return total > 50 ? 10 : 5;
-  };
 
   const paymentMethodLabels = {
     cash: "Dinheiro",
@@ -402,7 +401,7 @@ export default function Vendas() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
       
-      const couponValue = getSuggestedCouponValue();
+      const couponValue = getSuggestedCouponValue(total);
       const code = `FIDELIDADE-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
       const expireDate = new Date();
       expireDate.setDate(expireDate.getDate() + 7);
@@ -430,7 +429,13 @@ export default function Vendas() {
       const message = generateCouponMessage(
         selectedCustomer.name,
         couponValue,
-        expireDate.toISOString()
+        expireDate.toISOString(),
+        {
+          message5: settings.couponMessage5,
+          message10: settings.couponMessage10,
+          minPurchase5: settings.couponRules.minPurchase5,
+          minPurchase10: settings.couponRules.minPurchase10,
+        }
       );
 
       return {
@@ -868,7 +873,7 @@ export default function Vendas() {
         open={loyaltyCouponDialogOpen}
         onOpenChange={setLoyaltyCouponDialogOpen}
         customerName={selectedCustomer?.name || ""}
-        suggestedValue={getSuggestedCouponValue()}
+        suggestedValue={getSuggestedCouponValue(total)}
         onConfirmWithCoupon={handleConfirmWithCoupon}
         onConfirmWithoutCoupon={handleConfirmWithoutCoupon}
       />
