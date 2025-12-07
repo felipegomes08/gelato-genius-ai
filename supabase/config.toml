@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.generate-insights]
 verify_jwt = false
+
+[functions.extract-receipt-value]
+verify_jwt = false
+
+[functions.create-employee]
+verify_jwt = true

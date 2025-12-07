@@ -128,10 +128,20 @@ export type Database = {
           created_at: string
           created_by: string
           description: string
+          due_date: string | null
           id: string
+          installment_current: number | null
+          installment_total: number | null
+          is_paid: boolean | null
           notes: string | null
+          parent_transaction_id: string | null
           payment_method: string | null
+          payment_source: string | null
+          receipt_url: string | null
+          recurrence_type: string | null
           reference_id: string | null
+          reimbursed_at: string | null
+          reimbursement_status: string | null
           transaction_date: string
           transaction_type: string
         }
@@ -141,10 +151,20 @@ export type Database = {
           created_at?: string
           created_by: string
           description: string
+          due_date?: string | null
           id?: string
+          installment_current?: number | null
+          installment_total?: number | null
+          is_paid?: boolean | null
           notes?: string | null
+          parent_transaction_id?: string | null
           payment_method?: string | null
+          payment_source?: string | null
+          receipt_url?: string | null
+          recurrence_type?: string | null
           reference_id?: string | null
+          reimbursed_at?: string | null
+          reimbursement_status?: string | null
           transaction_date?: string
           transaction_type: string
         }
@@ -154,14 +174,32 @@ export type Database = {
           created_at?: string
           created_by?: string
           description?: string
+          due_date?: string | null
           id?: string
+          installment_current?: number | null
+          installment_total?: number | null
+          is_paid?: boolean | null
           notes?: string | null
+          parent_transaction_id?: string | null
           payment_method?: string | null
+          payment_source?: string | null
+          receipt_url?: string | null
+          recurrence_type?: string | null
           reference_id?: string | null
+          reimbursed_at?: string | null
+          reimbursement_status?: string | null
           transaction_date?: string
           transaction_type?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "financial_transactions_parent_transaction_id_fkey"
+            columns: ["parent_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "financial_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       products: {
         Row: {
