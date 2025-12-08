@@ -13,6 +13,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import { ChangePasswordDialog } from "./ChangePasswordDialog";
+import { NotificationBell } from "./notifications/NotificationBell";
 import logo from "@/assets/logo-churrosteria.png";
 
 interface HeaderProps {
@@ -39,12 +40,14 @@ export const Header = ({ title = "Churrosteria" }: HeaderProps) => {
             {title}
           </h1>
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="rounded-full">
-              <User className="h-5 w-5" />
-            </Button>
-          </DropdownMenuTrigger>
+        <div className="flex items-center gap-1">
+          <NotificationBell />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="rounded-full">
+                <User className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>{user?.email}</DropdownMenuLabel>
             <DropdownMenuSeparator />
@@ -64,6 +67,7 @@ export const Header = ({ title = "Churrosteria" }: HeaderProps) => {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        </div>
       </div>
       <ChangePasswordDialog open={changePasswordOpen} onOpenChange={setChangePasswordOpen} />
     </>

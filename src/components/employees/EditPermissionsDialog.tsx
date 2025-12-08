@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2, ShoppingCart, Package, BarChart3, DollarSign, FileText, Settings, CalendarCheck } from "lucide-react";
+import { Loader2, ShoppingCart, Package, BarChart3, DollarSign, FileText, Settings, CalendarCheck, Bell } from "lucide-react";
 
 interface Employee {
   id: string;
@@ -19,6 +19,7 @@ interface Employee {
     can_access_reports: boolean;
     can_access_settings: boolean;
     can_access_tasks: boolean;
+    can_access_notifications: boolean;
   }> | null;
 }
 
@@ -36,6 +37,7 @@ const permissions = [
   { key: "can_access_reports", label: "Relatórios", icon: FileText },
   { key: "can_access_settings", label: "Configurações", icon: Settings },
   { key: "can_access_tasks", label: "Tarefas", icon: CalendarCheck },
+  { key: "can_access_notifications", label: "Notificações", icon: Bell },
 ] as const;
 
 export function EditPermissionsDialog({ employee, open, onOpenChange }: EditPermissionsDialogProps) {
@@ -51,6 +53,7 @@ export function EditPermissionsDialog({ employee, open, onOpenChange }: EditPerm
       can_access_reports: false,
       can_access_settings: false,
       can_access_tasks: false,
+      can_access_notifications: false,
     };
 
     if (employee.user_permissions?.[0]) {
@@ -63,6 +66,7 @@ export function EditPermissionsDialog({ employee, open, onOpenChange }: EditPerm
         can_access_reports: currentPermissions.can_access_reports ?? false,
         can_access_settings: currentPermissions.can_access_settings ?? false,
         can_access_tasks: currentPermissions.can_access_tasks ?? false,
+        can_access_notifications: currentPermissions.can_access_notifications ?? false,
       });
     } else {
       setPermissionStates(defaultPermissions);
@@ -82,6 +86,7 @@ export function EditPermissionsDialog({ employee, open, onOpenChange }: EditPerm
           can_access_reports: permissionStates.can_access_reports || false,
           can_access_settings: permissionStates.can_access_settings || false,
           can_access_tasks: permissionStates.can_access_tasks || false,
+          can_access_notifications: permissionStates.can_access_notifications || false,
         }, {
           onConflict: 'user_id'
         });

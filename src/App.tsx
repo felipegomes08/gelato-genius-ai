@@ -15,6 +15,7 @@ import Financeiro from "./pages/Financeiro";
 import Funcionarios from "./pages/Funcionarios";
 import Clientes from "./pages/Clientes";
 import Tarefas from "./pages/Tarefas";
+import Notificacoes from "./pages/Notificacoes";
 import Configuracoes from "./pages/Configuracoes";
 import NotFound from "./pages/NotFound";
 
@@ -40,6 +41,7 @@ const App = () => (
               <Route path="/financeiro" element={<PermissionRoute permission="can_access_financial"><Financeiro /></PermissionRoute>} />
               <Route path="/funcionarios" element={<PermissionRoute requireMaster><Funcionarios /></PermissionRoute>} />
               <Route path="/clientes" element={<PermissionRoute permission="can_access_sales"><Clientes /></PermissionRoute>} />
+              <Route path="/notificacoes" element={<PermissionRoute permission="can_access_notifications"><Notificacoes /></PermissionRoute>} />
               <Route path="/configuracoes" element={<PermissionRoute requireMaster><Configuracoes /></PermissionRoute>} />
             </Route>
             
