@@ -1,4 +1,4 @@
-import { Home, ShoppingCart, Package, DollarSign, Users, UserCircle, ClipboardList, CalendarCheck } from "lucide-react";
+import { Home, ShoppingCart, Package, DollarSign, Users, UserCircle, ClipboardList, CalendarCheck, Bell } from "lucide-react";
 import { NavLink } from "./NavLink";
 import {
   Sidebar,
@@ -20,7 +20,8 @@ type PermissionKey =
   | "can_access_financial"
   | "can_access_reports"
   | "can_access_settings"
-  | "can_access_tasks";
+  | "can_access_tasks"
+  | "can_access_notifications";
 
 interface NavItem {
   to: string;
@@ -38,6 +39,7 @@ const navItems: NavItem[] = [
   { to: "/produtos", icon: Package, label: "Produtos", permission: "can_access_products" },
   { to: "/financeiro", icon: DollarSign, label: "Financeiro", permission: "can_access_financial" },
   { to: "/clientes", icon: UserCircle, label: "Clientes", permission: "can_access_sales" },
+  { to: "/notificacoes", icon: Bell, label: "Notificações", permission: "can_access_notifications" },
   { to: "/funcionarios", icon: Users, label: "Equipe", requireMaster: true },
 ];
 

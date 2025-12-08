@@ -32,6 +32,7 @@ interface Employee {
     can_access_reports: boolean;
     can_access_settings: boolean;
     can_access_tasks: boolean;
+    can_access_notifications: boolean;
   }> | null;
 }
 

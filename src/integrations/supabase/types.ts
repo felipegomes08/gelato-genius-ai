@@ -201,6 +201,69 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          is_active: boolean
+          is_recurring: boolean
+          is_sent: boolean
+          last_sent_at: string | null
+          message: string
+          recurrence_day_of_month: number | null
+          recurrence_day_of_week: number | null
+          recurrence_end_date: string | null
+          recurrence_time: string | null
+          recurrence_type: string | null
+          scheduled_at: string | null
+          sent_at: string | null
+          target_type: string
+          target_user_ids: string[] | null
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          is_active?: boolean
+          is_recurring?: boolean
+          is_sent?: boolean
+          last_sent_at?: string | null
+          message: string
+          recurrence_day_of_month?: number | null
+          recurrence_day_of_week?: number | null
+          recurrence_end_date?: string | null
+          recurrence_time?: string | null
+          recurrence_type?: string | null
+          scheduled_at?: string | null
+          sent_at?: string | null
+          target_type?: string
+          target_user_ids?: string[] | null
+          title: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_active?: boolean
+          is_recurring?: boolean
+          is_sent?: boolean
+          last_sent_at?: string | null
+          message?: string
+          recurrence_day_of_month?: number | null
+          recurrence_day_of_week?: number | null
+          recurrence_end_date?: string | null
+          recurrence_time?: string | null
+          recurrence_type?: string | null
+          scheduled_at?: string | null
+          sent_at?: string | null
+          target_type?: string
+          target_user_ids?: string[] | null
+          title?: string
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           category: string
@@ -273,6 +336,33 @@ export type Database = {
           is_active?: boolean
           phone?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          p256dh: string
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          p256dh: string
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          p256dh?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -520,9 +610,51 @@ export type Database = {
         }
         Relationships: []
       }
+      user_notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          notification_id: string | null
+          read_at: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message: string
+          notification_id?: string | null
+          read_at?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          notification_id?: string | null
+          read_at?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_notifications_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "notifications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_permissions: {
         Row: {
           can_access_financial: boolean
+          can_access_notifications: boolean
           can_access_products: boolean
           can_access_reports: boolean
           can_access_sales: boolean
@@ -536,6 +668,7 @@ export type Database = {
         }
         Insert: {
           can_access_financial?: boolean
+          can_access_notifications?: boolean
           can_access_products?: boolean
           can_access_reports?: boolean
           can_access_sales?: boolean
@@ -549,6 +682,7 @@ export type Database = {
         }
         Update: {
           can_access_financial?: boolean
+          can_access_notifications?: boolean
           can_access_products?: boolean
           can_access_reports?: boolean
           can_access_sales?: boolean
@@ -586,6 +720,10 @@ export type Database = {
     }
     Functions: {
       can_access_financial_area: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
+      can_access_notifications_area: {
         Args: { _user_id: string }
         Returns: boolean
       }

@@ -10,6 +10,7 @@ interface Permissions {
   can_access_reports: boolean;
   can_access_settings: boolean;
   can_access_tasks: boolean;
+  can_access_notifications: boolean;
 }
 
 interface UsePermissionsReturn {
@@ -27,6 +28,7 @@ const defaultPermissions: Permissions = {
   can_access_reports: false,
   can_access_settings: false,
   can_access_tasks: false,
+  can_access_notifications: false,
 };
 
 export function usePermissions(): UsePermissionsReturn {
@@ -65,6 +67,7 @@ export function usePermissions(): UsePermissionsReturn {
             can_access_reports: true,
             can_access_settings: true,
             can_access_tasks: true,
+            can_access_notifications: true,
           });
         } else {
           // Fetch specific permissions for employee
@@ -83,6 +86,7 @@ export function usePermissions(): UsePermissionsReturn {
               can_access_reports: permData.can_access_reports,
               can_access_settings: permData.can_access_settings,
               can_access_tasks: permData.can_access_tasks,
+              can_access_notifications: permData.can_access_notifications,
             });
           } else {
             setPermissions(defaultPermissions);
