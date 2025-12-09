@@ -9,7 +9,8 @@ type PermissionKey =
   | "can_access_financial"
   | "can_access_reports"
   | "can_access_settings"
-  | "can_access_tasks";
+  | "can_access_tasks"
+  | "can_access_notifications";
 
 interface PermissionRouteProps {
   children: React.ReactNode;
