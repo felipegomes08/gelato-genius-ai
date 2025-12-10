@@ -79,6 +79,9 @@ export function isTaskDueOnDate(task: Task, date: Date): boolean {
     const weekNumber = getWeek(date);
 
     switch (task.recurrence_type) {
+      case 'daily':
+        return true;
+      
       case 'weekly':
         return dayOfWeek === task.recurrence_day_of_week;
       
