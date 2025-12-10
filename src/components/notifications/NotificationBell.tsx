@@ -10,6 +10,7 @@ import { useNotifications } from "@/hooks/useNotifications";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { PushNotificationManager } from "./PushNotificationManager";
 
 export function NotificationBell() {
   const {
@@ -47,6 +48,10 @@ export function NotificationBell() {
               Marcar todas
             </Button>
           )}
+        </div>
+        
+        <div className="p-3 border-b bg-muted/30">
+          <PushNotificationManager />
         </div>
         
         <ScrollArea className="h-[300px]">
