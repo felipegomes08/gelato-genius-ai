@@ -192,7 +192,7 @@ export default function Financeiro() {
   }
 
   return (
-    <div className="max-w-md md:max-w-7xl mx-auto space-y-4">
+    <div className="max-w-md md:max-w-7xl mx-auto space-y-4 px-4 md:px-0">
       {/* Quick Expense Card */}
       <QuickExpenseCard />
 
