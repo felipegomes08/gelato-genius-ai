@@ -56,7 +56,12 @@ export function AddEmployeeDialog({ open, onOpenChange }: AddEmployeeDialogProps
     },
     onError: (error: any) => {
       console.error("Erro ao cadastrar funcionário:", error);
-      toast.error(error.message || "Erro ao cadastrar funcionário");
+      const message = error.message || "";
+      if (message.includes("already been registered") || message.includes("email_exists")) {
+        toast.error("Este e-mail já está cadastrado. Use outro e-mail.");
+      } else {
+        toast.error(message || "Erro ao cadastrar funcionário");
+      }
     },
   });
 
