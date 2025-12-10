@@ -253,6 +253,7 @@ export function EditTaskDialog({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="daily">Todo dia</SelectItem>
                     <SelectItem value="weekly">Toda semana</SelectItem>
                     <SelectItem value="biweekly">Semana sim, semana não</SelectItem>
                     <SelectItem value="monthly_date">Todo mês (dia fixo)</SelectItem>
