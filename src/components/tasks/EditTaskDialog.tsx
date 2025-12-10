@@ -20,6 +20,7 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 import { CalendarIcon } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -29,9 +30,10 @@ import { Task } from "@/hooks/useTasks";
 interface EditTaskDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: Partial<Task> & { id: string }) => void;
+  onSubmit: (data: Partial<Task> & { id: string; assignees?: string[] }) => void;
   task: Task | null;
   profiles: { id: string; full_name: string }[];
+  currentAssignees: string[];
   isLoading?: boolean;
 }
 
@@ -51,11 +53,12 @@ export function EditTaskDialog({
   onSubmit,
   task,
   profiles,
+  currentAssignees,
   isLoading,
 }: EditTaskDialogProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [assignedTo, setAssignedTo] = useState("");
+  const [selectedAssignees, setSelectedAssignees] = useState<string[]>([]);
   const [isRecurring, setIsRecurring] = useState(false);
   const [dueDate, setDueDate] = useState<Date>();
   const [recurrenceType, setRecurrenceType] = useState("weekly");
@@ -69,7 +72,7 @@ export function EditTaskDialog({
     if (task) {
       setTitle(task.title);
       setDescription(task.description || "");
-      setAssignedTo(task.assigned_to);
+      setSelectedAssignees(currentAssignees.length > 0 ? currentAssignees : [task.assigned_to]);
       setIsRecurring(task.is_recurring);
       setDueDate(task.due_date ? parseISO(task.due_date) : undefined);
       setRecurrenceType(task.recurrence_type || "weekly");
@@ -79,17 +82,26 @@ export function EditTaskDialog({
       setStartDate(task.recurrence_start_date ? parseISO(task.recurrence_start_date) : new Date());
       setEndDate(task.recurrence_end_date ? parseISO(task.recurrence_end_date) : undefined);
     }
-  }, [task]);
+  }, [task, currentAssignees]);
+
+  const toggleAssignee = (profileId: string) => {
+    setSelectedAssignees(prev => 
+      prev.includes(profileId)
+        ? prev.filter(id => id !== profileId)
+        : [...prev, profileId]
+    );
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!task || !title.trim() || !assignedTo) return;
+    if (!task || !title.trim() || selectedAssignees.length === 0) return;
 
-    const data: Partial<Task> & { id: string } = {
+    const data: Partial<Task> & { id: string; assignees?: string[] } = {
       id: task.id,
       title: title.trim(),
       description: description.trim() || null,
-      assigned_to: assignedTo,
+      assigned_to: selectedAssignees[0],
+      assignees: selectedAssignees,
       is_recurring: isRecurring,
     };
 
@@ -159,19 +171,32 @@ export function EditTaskDialog({
           </div>
 
           <div className="space-y-2">
-            <Label>Funcionário *</Label>
-            <Select value={assignedTo} onValueChange={setAssignedTo}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o funcionário" />
-              </SelectTrigger>
-              <SelectContent>
-                {profiles.map((profile) => (
-                  <SelectItem key={profile.id} value={profile.id}>
+            <Label>Funcionários * <span className="text-muted-foreground text-xs">(selecione um ou mais)</span></Label>
+            <div className="border rounded-md p-3 space-y-2 max-h-40 overflow-y-auto">
+              {profiles.map((profile) => (
+                <div key={profile.id} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`edit-profile-${profile.id}`}
+                    checked={selectedAssignees.includes(profile.id)}
+                    onCheckedChange={() => toggleAssignee(profile.id)}
+                  />
+                  <label
+                    htmlFor={`edit-profile-${profile.id}`}
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                  >
                     {profile.full_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                  </label>
+                </div>
+              ))}
+              {profiles.length === 0 && (
+                <p className="text-sm text-muted-foreground">Nenhum funcionário disponível</p>
+              )}
+            </div>
+            {selectedAssignees.length > 0 && (
+              <p className="text-xs text-muted-foreground">
+                {selectedAssignees.length} funcionário(s) selecionado(s)
+              </p>
+            )}
           </div>
 
           <div className="space-y-3">
@@ -342,7 +367,7 @@ export function EditTaskDialog({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={isLoading || !title.trim() || !assignedTo}>
+            <Button type="submit" disabled={isLoading || !title.trim() || selectedAssignees.length === 0}>
               Salvar
             </Button>
           </DialogFooter>

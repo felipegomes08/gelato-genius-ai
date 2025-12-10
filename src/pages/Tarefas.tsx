@@ -28,14 +28,28 @@ export default function Tarefas() {
     deleteTask,
     toggleCompletion,
     isTaskCompletedOnDate,
+    getTaskAssignees,
     isCreating,
     isUpdating,
   } = useTasks();
 
-  const tasksWithProfiles = tasks.map(task => ({
-    ...task,
-    assigned_profile: profiles.find(p => p.id === task.assigned_to),
-  }));
+  const tasksWithProfiles = tasks.map(task => {
+    const assigneeIds = getTaskAssignees(task.id);
+    const assignedProfiles = profiles.filter(p => assigneeIds.includes(p.id));
+    
+    // Fallback to legacy assigned_to if no assignees
+    if (assignedProfiles.length === 0 && task.assigned_to) {
+      const legacyProfile = profiles.find(p => p.id === task.assigned_to);
+      if (legacyProfile) {
+        assignedProfiles.push(legacyProfile);
+      }
+    }
+    
+    return {
+      ...task,
+      assigned_profiles: assignedProfiles,
+    };
+  });
 
   const tasksForSelectedDate = tasksWithProfiles.filter(task =>
     isTaskDueOnDate(task, selectedDate)
@@ -130,6 +144,7 @@ export default function Tarefas() {
         onSubmit={updateTask}
         task={selectedTask}
         profiles={profiles}
+        currentAssignees={selectedTask ? getTaskAssignees(selectedTask.id) : []}
         isLoading={isUpdating}
       />
 

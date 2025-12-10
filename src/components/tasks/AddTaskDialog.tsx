@@ -20,6 +20,7 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -53,7 +54,7 @@ export function AddTaskDialog({
 }: AddTaskDialogProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [assignedTo, setAssignedTo] = useState("");
+  const [selectedAssignees, setSelectedAssignees] = useState<string[]>([]);
   const [isRecurring, setIsRecurring] = useState(false);
   const [dueDate, setDueDate] = useState<Date>();
   const [recurrenceType, setRecurrenceType] = useState("weekly");
@@ -66,7 +67,7 @@ export function AddTaskDialog({
   const resetForm = () => {
     setTitle("");
     setDescription("");
-    setAssignedTo("");
+    setSelectedAssignees([]);
     setIsRecurring(false);
     setDueDate(undefined);
     setRecurrenceType("weekly");
@@ -77,15 +78,24 @@ export function AddTaskDialog({
     setEndDate(undefined);
   };
 
+  const toggleAssignee = (profileId: string) => {
+    setSelectedAssignees(prev => 
+      prev.includes(profileId)
+        ? prev.filter(id => id !== profileId)
+        : [...prev, profileId]
+    );
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!title.trim() || !assignedTo) return;
+    if (!title.trim() || selectedAssignees.length === 0) return;
 
     const data: CreateTaskInput = {
       title: title.trim(),
       description: description.trim() || undefined,
-      assigned_to: assignedTo,
+      assigned_to: selectedAssignees[0],
+      assignees: selectedAssignees,
       is_recurring: isRecurring,
     };
 
@@ -147,19 +157,32 @@ export function AddTaskDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="assignedTo">Funcionário *</Label>
-            <Select value={assignedTo} onValueChange={setAssignedTo} required>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o funcionário" />
-              </SelectTrigger>
-              <SelectContent>
-                {profiles.map((profile) => (
-                  <SelectItem key={profile.id} value={profile.id}>
+            <Label>Funcionários * <span className="text-muted-foreground text-xs">(selecione um ou mais)</span></Label>
+            <div className="border rounded-md p-3 space-y-2 max-h-40 overflow-y-auto">
+              {profiles.map((profile) => (
+                <div key={profile.id} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`profile-${profile.id}`}
+                    checked={selectedAssignees.includes(profile.id)}
+                    onCheckedChange={() => toggleAssignee(profile.id)}
+                  />
+                  <label
+                    htmlFor={`profile-${profile.id}`}
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                  >
                     {profile.full_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                  </label>
+                </div>
+              ))}
+              {profiles.length === 0 && (
+                <p className="text-sm text-muted-foreground">Nenhum funcionário disponível</p>
+              )}
+            </div>
+            {selectedAssignees.length > 0 && (
+              <p className="text-xs text-muted-foreground">
+                {selectedAssignees.length} funcionário(s) selecionado(s)
+              </p>
+            )}
           </div>
 
           <div className="space-y-3">
@@ -330,7 +353,7 @@ export function AddTaskDialog({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={isLoading || !title.trim() || !assignedTo}>
+            <Button type="submit" disabled={isLoading || !title.trim() || selectedAssignees.length === 0}>
               Criar Tarefa
             </Button>
           </DialogFooter>

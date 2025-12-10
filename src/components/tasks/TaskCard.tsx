@@ -1,14 +1,13 @@
-import { Check, RotateCcw, Calendar, User, Trash2, Edit } from "lucide-react";
+import { Check, RotateCcw, Calendar, User, Users, Trash2, Edit } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Task } from "@/hooks/useTasks";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 
 interface TaskCardProps {
-  task: Task & { assigned_profile?: { id: string; full_name: string } };
+  task: Task & { assigned_profiles?: { id: string; full_name: string }[] };
   date: Date;
   isCompleted: boolean;
   onToggleComplete: () => void;
@@ -48,6 +47,9 @@ export function TaskCard({
   showAssignee = false,
   isMaster = false,
 }: TaskCardProps) {
+  const assignedProfiles = task.assigned_profiles ?? [];
+  const hasMultipleAssignees = assignedProfiles.length > 1;
+
   return (
     <Card
       className={cn(
@@ -104,13 +106,31 @@ export function TaskCard({
                 </Badge>
               )}
 
-              {showAssignee && task.assigned_profile && (
+              {showAssignee && assignedProfiles.length > 0 && (
                 <Badge variant="outline" className="text-xs">
-                  <User className="h-3 w-3 mr-1" />
-                  {task.assigned_profile.full_name}
+                  {hasMultipleAssignees ? (
+                    <Users className="h-3 w-3 mr-1" />
+                  ) : (
+                    <User className="h-3 w-3 mr-1" />
+                  )}
+                  {hasMultipleAssignees 
+                    ? `${assignedProfiles.length} funcionários`
+                    : assignedProfiles[0]?.full_name
+                  }
                 </Badge>
               )}
             </div>
+
+            {/* Show all assignees when multiple */}
+            {showAssignee && hasMultipleAssignees && (
+              <div className="flex flex-wrap gap-1 mt-2">
+                {assignedProfiles.map(profile => (
+                  <Badge key={profile.id} variant="secondary" className="text-xs">
+                    {profile.full_name}
+                  </Badge>
+                ))}
+              </div>
+            )}
           </div>
 
           {isMaster && (
