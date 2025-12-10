@@ -51,7 +51,7 @@ export default function Comandas() {
   }, 0) || 0;
 
   return (
-    <div className="max-w-md md:max-w-7xl mx-auto space-y-4 pb-20 md:pb-6">
+    <div className="max-w-md md:max-w-7xl mx-auto space-y-4 pb-20 md:pb-6 px-4 md:px-0">
       {/* Header com estatísticas */}
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-card p-4 rounded-lg border">

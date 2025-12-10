@@ -309,7 +309,7 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="max-w-md md:max-w-7xl mx-auto space-y-6">
+    <div className="max-w-md md:max-w-7xl mx-auto space-y-6 px-4 md:px-0">
       {/* Period Filter */}
       <Card className="shadow-sm">
         <CardContent className="p-3">

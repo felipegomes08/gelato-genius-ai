@@ -84,7 +84,7 @@ export default function Produtos() {
   };
 
   return (
-    <div className="max-w-md md:max-w-7xl mx-auto space-y-4">
+    <div className="max-w-md md:max-w-7xl mx-auto space-y-4 px-4 md:px-0">
       {/* Search and Add */}
       <div className="flex gap-2">
         <div className="relative flex-1">

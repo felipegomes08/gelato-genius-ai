@@ -504,7 +504,7 @@ export default function Vendas() {
   };
 
   return (
-    <div className="max-w-md md:max-w-7xl mx-auto space-y-3 md:pb-0">
+    <div className="max-w-md md:max-w-7xl mx-auto space-y-3 md:pb-0 px-4 md:px-0">
         {/* Desktop: Split view - Produtos + Carrinho lado a lado */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Produtos (2 colunas em desktop) */}
