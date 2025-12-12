@@ -1,4 +1,4 @@
-import { Home, ShoppingCart, Package, DollarSign, Users, UserCircle, ClipboardList, MoreHorizontal, CalendarCheck, Bell } from "lucide-react";
+import { Home, ShoppingCart, Package, DollarSign, Users, UserCircle, ClipboardList, MoreHorizontal, CalendarCheck, Bell, FolderTree } from "lucide-react";
 import { NavLink } from "./NavLink";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useState } from "react";
@@ -40,6 +40,7 @@ const primaryItems: NavItem[] = [
 const secondaryItems: NavItem[] = [
   { to: "/tarefas", icon: CalendarCheck, label: "Tarefas", permission: "can_access_tasks" },
   { to: "/produtos", icon: Package, label: "Produtos", permission: "can_access_products" },
+  { to: "/categorias", icon: FolderTree, label: "Categorias", permission: "can_access_products" },
   { to: "/financeiro", icon: DollarSign, label: "Financeiro", permission: "can_access_financial" },
   { to: "/notificacoes", icon: Bell, label: "Notificações", permission: "can_access_notifications" },
   { to: "/funcionarios", icon: Users, label: "Equipe", requireMaster: true },

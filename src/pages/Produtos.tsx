@@ -18,6 +18,7 @@ interface Product {
   current_stock: number | null;
   controls_stock: boolean;
   category: string;
+  category_id: string | null;
   description: string | null;
   image_url: string | null;
   is_active: boolean;

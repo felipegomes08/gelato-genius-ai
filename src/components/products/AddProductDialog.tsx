@@ -13,6 +13,7 @@ import { Loader2 } from "lucide-react";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { unformatCurrency } from "@/lib/formatters";
+import { CategorySelect } from "@/components/categories/CategorySelect";
 
 const productSchema = z.object({
   name: z.string()
@@ -20,10 +21,7 @@ const productSchema = z.object({
     .min(1, "Nome é obrigatório")
     .max(100, "Nome deve ter no máximo 100 caracteres"),
   price: z.string().optional(),
-  category: z.string()
-    .trim()
-    .min(1, "Categoria é obrigatória")
-    .max(50, "Categoria deve ter no máximo 50 caracteres"),
+  category_id: z.string().optional(),
   description: z.string()
     .trim()
     .max(500, "Descrição deve ter no máximo 500 caracteres")
@@ -48,7 +46,7 @@ export function AddProductDialog({ open, onOpenChange }: AddProductDialogProps) 
     defaultValues: {
       name: "",
       price: "",
-      category: "",
+      category_id: "",
       description: "",
       controls_stock: true,
       current_stock: "0",
@@ -72,7 +70,8 @@ export function AddProductDialog({ open, onOpenChange }: AddProductDialogProps) 
       const { error } = await supabase.from("products").insert({
         name: data.name,
         price: priceValue && priceValue > 0 ? priceValue : null,
-        category: data.category,
+        category: "", // Keep for backward compatibility
+        category_id: data.category_id || null,
         description: data.description || null,
         controls_stock: data.controls_stock,
         current_stock: data.controls_stock ? Number(data.current_stock || 0) : null,
@@ -85,6 +84,8 @@ export function AddProductDialog({ open, onOpenChange }: AddProductDialogProps) 
 
       toast.success("Produto adicionado com sucesso!");
       await queryClient.invalidateQueries({ queryKey: ["products"] });
+      await queryClient.invalidateQueries({ queryKey: ["products-active"] });
+      await queryClient.invalidateQueries({ queryKey: ["category-product-counts"] });
       form.reset();
       onOpenChange(false);
     } catch (error: any) {
@@ -135,12 +136,16 @@ export function AddProductDialog({ open, onOpenChange }: AddProductDialogProps) 
 
               <FormField
                 control={form.control}
-                name="category"
+                name="category_id"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Categoria</FormLabel>
                     <FormControl>
-                      <Input placeholder="Ex: Casquinhas" {...field} />
+                      <CategorySelect
+                        value={field.value || ""}
+                        onValueChange={field.onChange}
+                        placeholder="Selecione..."
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

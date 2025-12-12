@@ -11,6 +11,7 @@ import Dashboard from "./pages/Dashboard";
 import Vendas from "./pages/Vendas";
 import Comandas from "./pages/Comandas";
 import Produtos from "./pages/Produtos";
+import Categorias from "./pages/Categorias";
 import Financeiro from "./pages/Financeiro";
 import Funcionarios from "./pages/Funcionarios";
 import Clientes from "./pages/Clientes";
@@ -38,6 +39,7 @@ const App = () => (
               <Route path="/comandas" element={<PermissionRoute permission="can_access_sales"><Comandas /></PermissionRoute>} />
               <Route path="/tarefas" element={<Tarefas />} />
               <Route path="/produtos" element={<PermissionRoute permission="can_access_products"><Produtos /></PermissionRoute>} />
+              <Route path="/categorias" element={<PermissionRoute permission="can_access_products"><Categorias /></PermissionRoute>} />
               <Route path="/financeiro" element={<PermissionRoute permission="can_access_financial"><Financeiro /></PermissionRoute>} />
               <Route path="/funcionarios" element={<PermissionRoute requireMaster><Funcionarios /></PermissionRoute>} />
               <Route path="/clientes" element={<PermissionRoute permission="can_access_sales"><Clientes /></PermissionRoute>} />
