@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
 // VAPID public key - this should match the one in your secrets
-const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || "BFwUGS0UcrIhVyvlgj4GBMlw88zFwujc_58loSo-L1uH4G-QVcV7QWhLdW2xkIgQlAwLWDHTwEeobUANNfQzbY8";
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = '='.repeat((4 - base64String.length % 4) % 4);
