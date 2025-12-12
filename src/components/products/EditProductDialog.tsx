@@ -11,6 +11,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { unformatCurrency, formatNumberToBRL } from "@/lib/formatters";
+import { CategorySelect } from "@/components/categories/CategorySelect";
 
 interface Product {
   id: string;
@@ -19,6 +20,7 @@ interface Product {
   current_stock: number | null;
   controls_stock: boolean;
   category: string;
+  category_id?: string | null;
   description: string | null;
   image_url: string | null;
   is_active: boolean;
@@ -34,7 +36,7 @@ interface EditProductDialogProps {
 export function EditProductDialog({ product, open, onOpenChange }: EditProductDialogProps) {
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
-  const [category, setCategory] = useState("");
+  const [categoryId, setCategoryId] = useState("");
   const [description, setDescription] = useState("");
   const [controlsStock, setControlsStock] = useState(false);
   const [currentStock, setCurrentStock] = useState("");
@@ -47,7 +49,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
     if (product) {
       setName(product.name);
       setPrice(product.price ? formatNumberToBRL(product.price) : "");
-      setCategory(product.category);
+      setCategoryId(product.category_id || "");
       setDescription(product.description || "");
       setControlsStock(product.controls_stock);
       setCurrentStock(product.current_stock?.toString() || "0");
@@ -69,7 +71,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
         .update({
           name,
           price: priceValue && priceValue > 0 ? priceValue : null,
-          category,
+          category_id: categoryId || null,
           description: description || null,
           controls_stock: controlsStock,
           current_stock: controlsStock ? parseInt(currentStock) : null,
@@ -85,6 +87,8 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
       });
 
       queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["products-active"] });
+      queryClient.invalidateQueries({ queryKey: ["category-product-counts"] });
       onOpenChange(false);
     } catch (error) {
       console.error("Error updating product:", error);
@@ -127,13 +131,11 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="edit-category">Categoria *</Label>
-            <Input
-              id="edit-category"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              placeholder="Ex: Roupas"
-              required
+            <Label htmlFor="edit-category">Categoria</Label>
+            <CategorySelect
+              value={categoryId}
+              onValueChange={setCategoryId}
+              placeholder="Selecione uma categoria"
             />
           </div>
 

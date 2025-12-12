@@ -38,6 +38,57 @@ export type Database = {
         }
         Relationships: []
       }
+      categories: {
+        Row: {
+          coupon_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          name: string
+          parent_id: string | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          coupon_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          parent_id?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          coupon_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          parent_id?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "categories_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coupons: {
         Row: {
           code: string
@@ -267,6 +318,7 @@ export type Database = {
       products: {
         Row: {
           category: string
+          category_id: string | null
           controls_stock: boolean
           created_at: string
           created_by: string | null
@@ -282,6 +334,7 @@ export type Database = {
         }
         Insert: {
           category: string
+          category_id?: string | null
           controls_stock?: boolean
           created_at?: string
           created_by?: string | null
@@ -297,6 +350,7 @@ export type Database = {
         }
         Update: {
           category?: string
+          category_id?: string | null
           controls_stock?: boolean
           created_at?: string
           created_by?: string | null
@@ -310,7 +364,15 @@ export type Database = {
           price?: number | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
