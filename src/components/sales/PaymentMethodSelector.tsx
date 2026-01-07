@@ -1,7 +1,7 @@
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Banknote, Smartphone, CreditCard, Bike } from "lucide-react";
+import { Banknote, Smartphone, CreditCard, Bike, Key } from "lucide-react";
 
-export type PaymentMethod = "cash" | "pix" | "debit" | "credit" | "ifood";
+export type PaymentMethod = "cash" | "pix" | "pix_chave" | "debit" | "credit" | "ifood";
 
 interface PaymentMethodSelectorProps {
   value: PaymentMethod | null;
@@ -32,6 +32,14 @@ export function PaymentMethodSelector({ value, onChange }: PaymentMethodSelector
         >
           <Smartphone className="h-5 w-5" />
           <span className="text-xs">PIX</span>
+        </ToggleGroupItem>
+
+        <ToggleGroupItem
+          value="pix_chave"
+          className="h-16 flex flex-col gap-1 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+        >
+          <Key className="h-5 w-5" />
+          <span className="text-xs">PIX Chave</span>
         </ToggleGroupItem>
 
         <ToggleGroupItem

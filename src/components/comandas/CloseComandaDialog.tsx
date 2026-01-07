@@ -41,7 +41,7 @@ interface ManualDiscount {
 }
 
 export function CloseComandaDialog({ open, onOpenChange, comanda }: CloseComandaDialogProps) {
-  const [paymentMethod, setPaymentMethod] = useState<"cash" | "pix" | "debit" | "credit" | "ifood" | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<"cash" | "pix" | "pix_chave" | "debit" | "credit" | "ifood" | null>(null);
   const [manualDiscount, setManualDiscount] = useState<ManualDiscount | null>(null);
   const [selectedCoupon, setSelectedCoupon] = useState<any>(null);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(comanda.customer || null);

@@ -54,7 +54,7 @@ export default function Vendas() {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
   const [manualDiscount, setManualDiscount] = useState<ManualDiscount | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<"cash" | "pix" | "debit" | "credit" | "ifood" | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<"cash" | "pix" | "pix_chave" | "debit" | "credit" | "ifood" | null>(null);
   
   const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
   const [discountDialogOpen, setDiscountDialogOpen] = useState(false);
