@@ -86,7 +86,7 @@ export function EditCategoryDialog({
         .update({
           name: name.trim(),
           is_active: isActive,
-          coupon_id: selectedCouponId || null,
+          coupon_id: selectedCouponId && selectedCouponId !== "none" ? selectedCouponId : null,
         })
         .eq("id", category.id);
 
@@ -172,7 +172,7 @@ export function EditCategoryDialog({
                   <SelectValue placeholder="Selecione um cupom" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Nenhum</SelectItem>
+                  <SelectItem value="none">Nenhum</SelectItem>
                   {coupons.map((coupon) => (
                     <SelectItem key={coupon.id} value={coupon.id}>
                       {coupon.code} -{" "}

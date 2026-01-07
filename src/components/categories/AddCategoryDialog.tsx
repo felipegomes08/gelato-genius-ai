@@ -73,7 +73,7 @@ export function AddCategoryDialog({
         name: name.trim(),
         parent_id: parentId,
         is_active: isActive,
-        coupon_id: selectedCouponId || null,
+        coupon_id: selectedCouponId && selectedCouponId !== "none" ? selectedCouponId : null,
         created_by: user.id,
       });
 
@@ -144,7 +144,7 @@ export function AddCategoryDialog({
                 <SelectValue placeholder="Selecione um cupom" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Nenhum</SelectItem>
+                <SelectItem value="none">Nenhum</SelectItem>
                 {coupons.map((coupon) => (
                   <SelectItem key={coupon.id} value={coupon.id}>
                     {coupon.code} -{" "}
