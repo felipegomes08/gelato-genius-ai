@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Search, ChevronDown, ChevronRight, Package, Loader2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, normalizeText } from "@/lib/utils";
 
 interface Product {
   id: string;
@@ -59,11 +59,12 @@ export function ProductsByCategory({
     },
   });
 
-  // Filter products by search
+  // Filter products by search with accent normalization
   const filteredProducts = useMemo(() => {
-    if (!searchTerm) return products;
+    if (!searchTerm.trim()) return products;
+    const normalizedSearch = normalizeText(searchTerm);
     return products.filter((p) =>
-      p.name.toLowerCase().includes(searchTerm.toLowerCase())
+      normalizeText(p.name).includes(normalizedSearch)
     );
   }, [products, searchTerm]);
 

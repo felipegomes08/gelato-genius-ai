@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CurrencyInput } from "@/components/ui/currency-input";
@@ -14,14 +13,15 @@ import { LoyaltyCouponDialog } from "@/components/sales/LoyaltyCouponDialog";
 import { EditCouponMessageDialog } from "@/components/sales/EditCouponMessageDialog";
 import { CheckoutSummary } from "@/components/sales/CheckoutSummary";
 import { PaymentMethodSelector } from "@/components/sales/PaymentMethodSelector";
-import { Search, Plus, Minus, X, User, Percent, Sparkles, ShoppingCart } from "lucide-react";
+import { SalesProductGrid } from "@/components/sales/SalesProductGrid";
+import { Plus, Minus, X, User, Percent, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { generateCouponMessage } from "@/lib/couponMessages";
 import { useAppSettings } from "@/hooks/useAppSettings";
 
 interface CartItem {
   id: string;
-  cartItemId: string; // Identificador único do item no carrinho
+  cartItemId: string;
   name: string;
   price: number | null;
   quantity: number;
@@ -50,7 +50,6 @@ interface ManualDiscount {
 
 export default function Vendas() {
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
   const [manualDiscount, setManualDiscount] = useState<ManualDiscount | null>(null);
@@ -61,7 +60,7 @@ export default function Vendas() {
   const [loyaltyCouponDialogOpen, setLoyaltyCouponDialogOpen] = useState(false);
   const [editMessageDialogOpen, setEditMessageDialogOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [editingPriceId, setEditingPriceId] = useState<string | null>(null); // cartItemId sendo editado
+  const [editingPriceId, setEditingPriceId] = useState<string | null>(null);
   const [tempPrice, setTempPrice] = useState<string>("");
   
   const [pendingWhatsAppData, setPendingWhatsAppData] = useState<{
@@ -85,10 +84,6 @@ export default function Vendas() {
       return data;
     },
   });
-
-  const filteredProducts = products?.filter((p) =>
-    p.name.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || [];
 
   const addToCart = (product: typeof products[0]) => {
     // Para produtos no peso, sempre criar um novo item (não incrementar quantidade)
@@ -230,7 +225,6 @@ export default function Vendas() {
     setSelectedCoupon(null);
     setManualDiscount(null);
     setPaymentMethod(null);
-    setSearchTerm("");
     setIsProcessing(false);
   };
 
@@ -508,78 +502,12 @@ export default function Vendas() {
         {/* Desktop: Split view - Produtos + Carrinho lado a lado */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Produtos (2 colunas em desktop) */}
-        <div className="lg:col-span-2 space-y-3">
-          {/* Search */}
-          <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-          <Input
-            placeholder="Buscar produto..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 h-12"
+        <div className="lg:col-span-2">
+          <SalesProductGrid
+            products={products || []}
+            onProductClick={addToCart}
+            isLoading={isLoading}
           />
-        </div>
-
-        {/* Products Grid & Cart - Grouped for zero spacing */}
-        <div className="space-y-0">
-          {/* Products Grid - Always Visible */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <h2 className="font-semibold">Produtos</h2>
-              <span className="text-sm text-muted-foreground">
-                {filteredProducts.length} disponíveis
-              </span>
-            </div>
-            
-            {isLoading ? (
-              <Card className="p-8 text-center">
-                <p className="text-muted-foreground">Carregando produtos...</p>
-              </Card>
-            ) : filteredProducts.length > 0 ? (
-              <div className="overflow-x-auto md:overflow-visible -mx-1 pb-1">
-                <div className="flex md:grid md:grid-cols-2 lg:grid-cols-3 gap-2 px-1">
-                  {filteredProducts.map((product) => (
-                    <button
-                      key={product.id}
-                      onClick={() => addToCart(product)}
-                      className="group relative flex flex-col gap-2 p-3 rounded-lg border bg-card hover:bg-accent/50 hover:border-primary/50 transition-all text-left min-w-[150px]"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm leading-tight line-clamp-2">
-                            {product.name}
-                          </p>
-                          {product.controls_stock && (
-                            <Badge 
-                              variant={product.current_stock && product.current_stock > 0 ? "secondary" : "destructive"}
-                              className="mt-1 text-xs h-5"
-                            >
-                              Est: {product.current_stock || 0}
-                            </Badge>
-                          )}
-                        </div>
-                        <ShoppingCart className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                      </div>
-                      <p className="font-bold text-primary">
-                        {product.price !== null ? (
-                          `R$ ${product.price.toFixed(2)}`
-                        ) : (
-                          <span className="text-sm">Preço no peso</span>
-                        )}
-                      </p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <Card className="p-8 text-center">
-                <p className="text-muted-foreground">
-                  {searchTerm ? "Nenhum produto encontrado" : "Nenhum produto cadastrado"}
-                </p>
-              </Card>
-            )}
-          </div>
-        </div>
         </div>
 
         {/* Carrinho (1 coluna fixa à direita em desktop) */}
