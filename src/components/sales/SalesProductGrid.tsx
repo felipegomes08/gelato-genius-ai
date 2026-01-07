@@ -5,9 +5,10 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, ShoppingCart, ArrowLeft } from "lucide-react";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { Search, ShoppingCart, ArrowLeft, Zap } from "lucide-react";
 import { cn, normalizeText } from "@/lib/utils";
-
+import { toast } from "sonner";
 interface Product {
   id: string;
   name: string;
@@ -49,6 +50,41 @@ export function SalesProductGrid({ products, onProductClick, isLoading }: SalesP
       return data as Category[];
     },
   });
+
+  // Fetch top selling products
+  const { data: topSellers = [] } = useQuery({
+    queryKey: ["top-sellers", products],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("sale_items")
+        .select("product_id, quantity");
+
+      if (error) throw error;
+
+      // Aggregate quantities by product_id
+      const counts: Record<string, number> = {};
+      data.forEach((item) => {
+        counts[item.product_id] = (counts[item.product_id] || 0) + item.quantity;
+      });
+
+      // Get top 6 product IDs sorted by total sold
+      const topIds = Object.entries(counts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 6)
+        .map(([id]) => id);
+
+      // Match with active products from props
+      return topIds
+        .map((id) => products.find((p) => p.id === id))
+        .filter((p): p is Product => p !== undefined);
+    },
+    enabled: products.length > 0,
+  });
+
+  const handleProductClick = (product: Product) => {
+    onProductClick(product);
+    toast.success(`${product.name} adicionado`, { duration: 1000 });
+  };
 
   // Clear selected category when search is active
   useEffect(() => {
@@ -125,7 +161,7 @@ export function SalesProductGrid({ products, onProductClick, isLoading }: SalesP
       {productsToRender.map((product) => (
         <button
           key={product.id}
-          onClick={() => onProductClick(product)}
+          onClick={() => handleProductClick(product)}
           className="group relative flex flex-col gap-1 p-3 rounded-lg border bg-card hover:bg-accent/50 hover:border-primary/50 transition-all text-left"
         >
           <div className="flex items-start justify-between gap-1">
@@ -155,6 +191,39 @@ export function SalesProductGrid({ products, onProductClick, isLoading }: SalesP
       ))}
     </div>
   );
+
+  // Render top sellers section
+  const renderTopSellers = () => {
+    if (topSellers.length === 0) return null;
+    
+    return (
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <Zap className="h-4 w-4 text-amber-500" />
+          <span className="text-sm font-medium text-muted-foreground">Mais vendidos</span>
+        </div>
+        <ScrollArea className="w-full whitespace-nowrap">
+          <div className="flex gap-2 pb-2">
+            {topSellers.map((product) => (
+              <button
+                key={product.id}
+                onClick={() => handleProductClick(product)}
+                className="flex-shrink-0 flex flex-col items-start gap-0.5 p-2 rounded-lg border bg-card hover:bg-accent/50 hover:border-primary/50 transition-all text-left min-w-[100px] max-w-[120px]"
+              >
+                <p className="font-medium text-xs leading-tight line-clamp-2 w-full">
+                  {product.name}
+                </p>
+                <p className="font-bold text-primary text-xs">
+                  {product.price !== null ? `R$ ${product.price.toFixed(2)}` : "—"}
+                </p>
+              </button>
+            ))}
+          </div>
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
+      </div>
+    );
+  };
 
   if (isLoading) {
     return (
@@ -222,8 +291,9 @@ export function SalesProductGrid({ products, onProductClick, isLoading }: SalesP
             )}
           </div>
         ) : (
-          // Category selection mode: show chips
+          // Category selection mode: show top sellers + chips
           <div className="space-y-4">
+            {renderTopSellers()}
             <span className="text-sm text-muted-foreground">Selecione uma categoria:</span>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {categoriesWithProducts.map((category) => {
