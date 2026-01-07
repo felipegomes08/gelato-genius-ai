@@ -1,11 +1,11 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Package, ChevronDown, ChevronUp, ShoppingCart } from "lucide-react";
+import { Search, ShoppingCart, ArrowLeft } from "lucide-react";
 import { cn, normalizeText } from "@/lib/utils";
 
 interface Product {
@@ -33,7 +33,7 @@ interface SalesProductGridProps {
 
 export function SalesProductGrid({ products, onProductClick, isLoading }: SalesProductGridProps) {
   const [searchTerm, setSearchTerm] = useState("");
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   const { data: categories = [] } = useQuery({
     queryKey: ["categories-active"],
@@ -49,6 +49,13 @@ export function SalesProductGrid({ products, onProductClick, isLoading }: SalesP
       return data as Category[];
     },
   });
+
+  // Clear selected category when search is active
+  useEffect(() => {
+    if (searchTerm.trim()) {
+      setSelectedCategory(null);
+    }
+  }, [searchTerm]);
 
   // Normalize and filter products
   const filteredProducts = useMemo(() => {
@@ -91,29 +98,26 @@ export function SalesProductGrid({ products, onProductClick, isLoading }: SalesP
     return rootCategories.filter((c) => hasProductsInCategory(c.id));
   }, [rootCategories, productsByCategory, categories]);
 
-  const toggleCategory = (categoryId: string) => {
-    const newExpanded = new Set(expandedCategories);
-    if (newExpanded.has(categoryId)) {
-      newExpanded.delete(categoryId);
-    } else {
-      newExpanded.add(categoryId);
-    }
-    setExpandedCategories(newExpanded);
+  const selectCategory = (categoryId: string) => {
+    setSelectedCategory(categoryId);
   };
 
-  const expandAll = () => {
-    const allCategoryIds = new Set(categoriesWithProducts.map(c => c.id));
-    if (productsByCategory["uncategorized"]?.length > 0) {
-      allCategoryIds.add("uncategorized");
-    }
-    setExpandedCategories(allCategoryIds);
-  };
-
-  const collapseAll = () => {
-    setExpandedCategories(new Set());
+  const clearSelection = () => {
+    setSelectedCategory(null);
   };
 
   const hasSearchTerm = searchTerm.trim().length > 0;
+
+  // Get selected category info
+  const selectedCategoryInfo = useMemo(() => {
+    if (!selectedCategory) return null;
+    if (selectedCategory === "uncategorized") {
+      return { id: "uncategorized", name: "Sem categoria" };
+    }
+    return categories.find((c) => c.id === selectedCategory);
+  }, [selectedCategory, categories]);
+
+  const selectedCategoryProducts = selectedCategory ? (productsByCategory[selectedCategory] || []) : [];
 
   // Render products grid
   const renderProductsGrid = (productsToRender: Product[]) => (
@@ -152,44 +156,6 @@ export function SalesProductGrid({ products, onProductClick, isLoading }: SalesP
     </div>
   );
 
-  // Render category section
-  const renderCategorySection = (category: { id: string; name: string }, isUncategorized = false) => {
-    const categoryProducts = productsByCategory[category.id] || [];
-    if (categoryProducts.length === 0) return null;
-
-    const isExpanded = expandedCategories.has(category.id);
-
-    return (
-      <div key={category.id} className="space-y-2">
-        <button
-          onClick={() => toggleCategory(category.id)}
-          className={cn(
-            "flex items-center gap-2 w-full px-3 py-2 rounded-lg transition-colors text-left",
-            isExpanded ? "bg-primary/10 text-primary" : "bg-muted/50 hover:bg-muted"
-          )}
-        >
-          {isExpanded ? (
-            <ChevronDown className="h-4 w-4 flex-shrink-0" />
-          ) : (
-            <ChevronUp className="h-4 w-4 flex-shrink-0 rotate-180" />
-          )}
-          <span className={cn("font-medium", isUncategorized && "text-muted-foreground")}>
-            {category.name}
-          </span>
-          <Badge variant="secondary" className="text-xs ml-auto">
-            {categoryProducts.length}
-          </Badge>
-        </button>
-
-        {isExpanded && (
-          <div className="pl-2">
-            {renderProductsGrid(categoryProducts)}
-          </div>
-        )}
-      </div>
-    );
-  };
-
   if (isLoading) {
     return (
       <Card className="p-8 text-center">
@@ -211,69 +177,7 @@ export function SalesProductGrid({ products, onProductClick, isLoading }: SalesP
         />
       </div>
 
-      {/* Category chips + Expand/Collapse buttons */}
-      {!hasSearchTerm && categoriesWithProducts.length > 0 && (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Categorias:</span>
-            <div className="flex gap-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={expandAll}
-                className="h-7 text-xs"
-              >
-                Expandir
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={collapseAll}
-                className="h-7 text-xs"
-              >
-                Recolher
-              </Button>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {categoriesWithProducts.map((category) => {
-              const isExpanded = expandedCategories.has(category.id);
-              const count = productsByCategory[category.id]?.length || 0;
-              return (
-                <button
-                  key={category.id}
-                  onClick={() => toggleCategory(category.id)}
-                  className={cn(
-                    "px-3 py-1.5 rounded-full text-sm font-medium transition-all",
-                    isExpanded
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : "bg-muted hover:bg-muted/80 text-foreground"
-                  )}
-                >
-                  {category.name}
-                  <span className="ml-1.5 opacity-70">({count})</span>
-                </button>
-              );
-            })}
-            {productsByCategory["uncategorized"]?.length > 0 && (
-              <button
-                onClick={() => toggleCategory("uncategorized")}
-                className={cn(
-                  "px-3 py-1.5 rounded-full text-sm font-medium transition-all",
-                  expandedCategories.has("uncategorized")
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "bg-muted hover:bg-muted/80 text-muted-foreground"
-                )}
-              >
-                Sem categoria
-                <span className="ml-1.5 opacity-70">({productsByCategory["uncategorized"].length})</span>
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Products */}
+      {/* Content */}
       <div className="space-y-3">
         {hasSearchTerm ? (
           // Search mode: show flat list
@@ -291,21 +195,69 @@ export function SalesProductGrid({ products, onProductClick, isLoading }: SalesP
               <p className="text-muted-foreground">Nenhum produto encontrado</p>
             </Card>
           )
-        ) : (
-          // Category mode
-          <>
-            {categoriesWithProducts.map((category) =>
-              renderCategorySection(category)
+        ) : selectedCategory ? (
+          // Focus mode: show only selected category
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearSelection}
+                className="h-9 px-3"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Voltar
+              </Button>
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-lg">{selectedCategoryInfo?.name}</span>
+                <Badge variant="secondary">{selectedCategoryProducts.length}</Badge>
+              </div>
+            </div>
+            {selectedCategoryProducts.length > 0 ? (
+              renderProductsGrid(selectedCategoryProducts)
+            ) : (
+              <Card className="p-8 text-center">
+                <p className="text-muted-foreground">Nenhum produto nesta categoria</p>
+              </Card>
             )}
-            {productsByCategory["uncategorized"]?.length > 0 &&
-              renderCategorySection({ id: "uncategorized", name: "Sem categoria" }, true)}
+          </div>
+        ) : (
+          // Category selection mode: show chips
+          <div className="space-y-4">
+            <span className="text-sm text-muted-foreground">Selecione uma categoria:</span>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {categoriesWithProducts.map((category) => {
+                const count = productsByCategory[category.id]?.length || 0;
+                return (
+                  <button
+                    key={category.id}
+                    onClick={() => selectCategory(category.id)}
+                    className="flex items-center justify-between gap-2 px-4 py-3 rounded-lg bg-muted hover:bg-primary/10 hover:text-primary transition-all text-left border hover:border-primary/30"
+                  >
+                    <span className="font-medium truncate">{category.name}</span>
+                    <Badge variant="secondary" className="flex-shrink-0">{count}</Badge>
+                  </button>
+                );
+              })}
+              {productsByCategory["uncategorized"]?.length > 0 && (
+                <button
+                  onClick={() => selectCategory("uncategorized")}
+                  className="flex items-center justify-between gap-2 px-4 py-3 rounded-lg bg-muted/50 hover:bg-primary/10 hover:text-primary transition-all text-left border hover:border-primary/30"
+                >
+                  <span className="font-medium text-muted-foreground truncate">Sem categoria</span>
+                  <Badge variant="secondary" className="flex-shrink-0">
+                    {productsByCategory["uncategorized"].length}
+                  </Badge>
+                </button>
+              )}
+            </div>
             
-            {filteredProducts.length === 0 && (
+            {categoriesWithProducts.length === 0 && !productsByCategory["uncategorized"]?.length && (
               <Card className="p-8 text-center">
                 <p className="text-muted-foreground">Nenhum produto cadastrado</p>
               </Card>
             )}
-          </>
+          </div>
         )}
       </div>
     </div>
