@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, TrendingUp, TrendingDown, Calendar, Loader2, Edit2, Trash2, ChevronDown, Filter, X, CreditCard, RefreshCw } from "lucide-react";
+import { Plus, TrendingUp, TrendingDown, Loader2, Edit2, Trash2, ChevronDown, Filter, X, CreditCard, RefreshCw } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { startOfDay, startOfWeek, startOfMonth, startOfYear } from "date-fns";
+import { startOfMonth, endOfMonth } from "date-fns";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AddTransactionDialog } from "@/components/financial/AddTransactionDialog";
@@ -20,6 +20,7 @@ import { PendingReimbursements } from "@/components/financial/PendingReimburseme
 import { BillsToPay } from "@/components/financial/BillsToPay";
 import { AddInstallmentDialog } from "@/components/financial/AddInstallmentDialog";
 import { AddRecurringDialog } from "@/components/financial/AddRecurringDialog";
+import { DateRangePicker } from "@/components/financial/DateRangePicker";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,6 +32,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { DateRange } from "react-day-picker";
 
 interface Transaction {
   id: string;
@@ -44,10 +46,11 @@ interface Transaction {
   payment_source?: string | null;
 }
 
-type PeriodType = "Hoje" | "Semana" | "Mês" | "Ano";
-
 export default function Financeiro() {
-  const [period, setPeriod] = useState<PeriodType>("Hoje");
+  const [dateRange, setDateRange] = useState<DateRange>({
+    from: startOfMonth(new Date()),
+    to: endOfMonth(new Date()),
+  });
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
@@ -79,31 +82,14 @@ export default function Financeiro() {
   });
 
   const getFilteredTransactions = () => {
-    const now = new Date();
-    let startDate: Date;
+    if (!dateRange.from || !dateRange.to) return transactions;
 
-    switch (period) {
-      case "Hoje":
-        startDate = startOfDay(now);
-        break;
-      case "Semana":
-        startDate = startOfWeek(now, { weekStartsOn: 0 });
-        break;
-      case "Mês":
-        startDate = startOfMonth(now);
-        break;
-      case "Ano":
-        startDate = startOfYear(now);
-        break;
-      default:
-        startDate = startOfDay(now);
-    }
-
-    const startDateString = startDate.toISOString().split("T")[0];
+    const startDateString = dateRange.from.toISOString().split("T")[0];
+    const endDateString = dateRange.to.toISOString().split("T")[0];
 
     return transactions.filter((t) => {
       const transactionDateString = new Date(t.transaction_date).toISOString().split("T")[0];
-      const dateMatch = transactionDateString >= startDateString;
+      const dateMatch = transactionDateString >= startDateString && transactionDateString <= endDateString;
       const typeMatch = filterType === "all" || t.transaction_type === filterType;
       const categoryMatch = filterCategory === "all" || t.category === filterCategory;
       const paymentMatch = filterPaymentMethod === "all" || t.payment_method === filterPaymentMethod;
@@ -208,21 +194,10 @@ export default function Financeiro() {
           {/* Period Filter and Actions */}
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-2">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <Calendar className="h-4 w-4 mr-2" />
-                    {period}
-                    <ChevronDown className="h-4 w-4 ml-2" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
-                  <DropdownMenuItem onClick={() => setPeriod("Hoje")}>Hoje</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setPeriod("Semana")}>Semana</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setPeriod("Mês")}>Mês</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setPeriod("Ano")}>Ano</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <DateRangePicker 
+                dateRange={dateRange} 
+                onDateRangeChange={setDateRange} 
+              />
               
               <Button 
                 variant={showFilters ? "default" : "outline"} 
