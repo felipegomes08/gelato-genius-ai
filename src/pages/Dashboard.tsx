@@ -1,11 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TrendingUp, ShoppingCart, Package, AlertTriangle, Users, DollarSign, Sparkles } from "lucide-react";
+import { TrendingUp, ShoppingCart, Package, AlertTriangle, Users, Sparkles } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { startOfDay, endOfDay, subDays, startOfMonth, endOfMonth, subMonths } from "date-fns";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { ExpiringCouponsCard } from "@/components/dashboard/ExpiringCouponsCard";
 
 type PeriodType = 'today' | '7days' | '30days' | 'month' | 'all';
@@ -198,6 +198,102 @@ export default function Dashboard() {
     refetchInterval: 60000,
   });
 
+  // ============ QUERIES PARA IA (TODO PERÍODO) ============
+  
+  // Query: Vendas de TODO período (para IA)
+  const { data: allTimeSales, isLoading: loadingAllTimeSales } = useQuery({
+    queryKey: ['sales', 'all-time-ai'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('sales')
+        .select('total, created_at')
+        .eq('status', 'completed');
+      return data || [];
+    },
+    refetchInterval: 300000, // 5 minutos
+  });
+
+  // Query: Itens vendidos de TODO período (para IA)
+  const { data: allTimeItems, isLoading: loadingAllTimeItems } = useQuery({
+    queryKey: ['sale_items', 'all-time-ai'],
+    queryFn: async () => {
+      const { data: sales } = await supabase
+        .from('sales')
+        .select('id')
+        .eq('status', 'completed');
+      
+      if (!sales || sales.length === 0) return [];
+      
+      const saleIds = sales.map(s => s.id);
+      const { data } = await supabase
+        .from('sale_items')
+        .select('quantity, product_id, product_name, subtotal')
+        .in('sale_id', saleIds);
+      
+      return data || [];
+    },
+    refetchInterval: 300000,
+  });
+
+  // Query: Top clientes de TODO período (para IA)
+  const { data: allTimeCustomers } = useQuery({
+    queryKey: ['top_customers', 'all-time-ai'],
+    queryFn: async () => {
+      const { data: sales } = await supabase
+        .from('sales')
+        .select('customer_id, total, customers(name)')
+        .eq('status', 'completed')
+        .not('customer_id', 'is', null);
+      
+      if (!sales || sales.length === 0) return [];
+      
+      // Agrupar por cliente
+      const grouped = sales.reduce((acc: any, sale: any) => {
+        if (!sale.customer_id) return acc;
+        if (!acc[sale.customer_id]) {
+          acc[sale.customer_id] = {
+            name: sale.customers?.name || 'Cliente sem nome',
+            purchases: 0,
+            total: 0,
+          };
+        }
+        acc[sale.customer_id].purchases += 1;
+        acc[sale.customer_id].total += Number(sale.total);
+        return acc;
+      }, {});
+      
+      return Object.values(grouped)
+        .sort((a: any, b: any) => b.total - a.total)
+        .slice(0, 10);
+    },
+    refetchInterval: 300000,
+  });
+
+  // Cálculos para IA (todo período)
+  const allTimeRevenue = allTimeSales?.reduce((sum, sale) => sum + Number(sale.total), 0) || 0;
+  const allTimeItemsSold = allTimeItems?.reduce((sum, item) => sum + item.quantity, 0) || 0;
+  const allTimeAverageTicket = allTimeSales && allTimeSales.length > 0
+    ? allTimeRevenue / allTimeSales.length
+    : 0;
+
+  // Top produtos de todo período (para IA)
+  const allTimeTopProducts = useMemo(() => {
+    if (!allTimeItems) return [];
+    const grouped = allTimeItems.reduce((acc: any, item) => {
+      if (!acc[item.product_id]) {
+        acc[item.product_id] = { name: item.product_name, sold: 0, revenue: 0 };
+      }
+      acc[item.product_id].sold += item.quantity;
+      acc[item.product_id].revenue += Number(item.subtotal);
+      return acc;
+    }, {});
+    return Object.values(grouped)
+      .sort((a: any, b: any) => b.sold - a.sold)
+      .slice(0, 10);
+  }, [allTimeItems]);
+
+  // ============ FIM QUERIES PARA IA ============
+
   // Cálculos
   const currentRevenue = currentSales?.reduce((sum, sale) => sum + Number(sale.total), 0) || 0;
   const previousRevenue = previousSales?.reduce((sum, sale) => sum + Number(sale.total), 0) || 0;
@@ -213,16 +309,16 @@ export default function Dashboard() {
     ? currentRevenue / currentSales.length
     : 0;
 
-  // Query: Insights da IA
+  // Query: Insights da IA (sempre todo período)
   const { data: aiInsights, isLoading: loadingInsights } = useQuery({
-    queryKey: ['ai-insights', period, currentRevenue, currentProductsSold],
+    queryKey: ['ai-insights', allTimeRevenue, allTimeItemsSold],
     queryFn: async () => {
       const salesData = {
-        revenue: currentRevenue,
-        itemsSold: currentProductsSold,
-        averageTicket: currentAverageTicket,
-        changePercent: Number(revenueChange),
-        topProducts: (topProducts || []).map((p: any) => ({
+        revenue: allTimeRevenue,
+        itemsSold: allTimeItemsSold,
+        averageTicket: allTimeAverageTicket,
+        totalSales: allTimeSales?.length || 0,
+        topProducts: allTimeTopProducts.map((p: any) => ({
           name: p.name,
           quantity: p.sold,
           revenue: p.revenue
@@ -235,7 +331,7 @@ export default function Dashboard() {
       };
 
       const customersData = {
-        topCustomers: (topCustomers || []).map((c: any) => ({
+        topCustomers: (allTimeCustomers || []).map((c: any) => ({
           name: c.name,
           total: c.total
         }))
@@ -246,15 +342,15 @@ export default function Dashboard() {
           salesData,
           stockData,
           customersData,
-          period: getPeriodLabel()
+          period: 'Todo o histórico'
         }
       });
 
       if (error) throw error;
       return data.insights;
     },
-    enabled: !loadingCurrentSales && !loadingCurrentItems && (topProducts?.length || 0) > 0,
-    refetchInterval: 300000, // 5 minutos
+    enabled: !loadingAllTimeSales && !loadingAllTimeItems && allTimeTopProducts.length > 0,
+    refetchInterval: 300000,
   });
 
   const getPeriodLabel = () => {
@@ -366,7 +462,7 @@ export default function Dashboard() {
             Insights da IA
           </CardTitle>
           <CardDescription>
-            Análise inteligente dos seus dados de negócio
+            Análise inteligente de todo o histórico do seu negócio
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
