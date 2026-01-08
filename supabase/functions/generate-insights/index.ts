@@ -74,11 +74,27 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Safe number formatting with defaults
+    const safeToFixed = (value: any, decimals: number = 2): string => {
+      if (typeof value !== 'number' || isNaN(value)) return '0.00';
+      return value.toFixed(decimals);
+    };
     
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY não configurada');
     }
+
+    // Build top products list safely
+    const topProductsList = (salesData.topProducts || [])
+      .map((p: any) => `- ${p.name || 'Produto'}: ${p.quantity || 0} unidades vendidas (R$ ${safeToFixed(p.revenue)})`)
+      .join('\n') || 'Nenhum produto vendido ainda';
+
+    // Build top customers list safely
+    const topCustomersList = (customersData.topCustomers || [])
+      .map((c: any) => `- ${c.name || 'Cliente'}: R$ ${safeToFixed(c.total)} em compras`)
+      .join('\n') || 'Nenhum cliente com compras ainda';
 
     // Construir prompt com dados reais
     const prompt = `Você é um analista de negócios especializado em varejo. Analise os dados abaixo e forneça 3-4 insights práticos e acionáveis em português do Brasil.
@@ -86,20 +102,20 @@ serve(async (req) => {
 PERÍODO ANALISADO: ${period}
 
 DADOS DE VENDAS:
-- Faturamento: R$ ${salesData.revenue.toFixed(2)}
-- Produtos vendidos: ${salesData.itemsSold}
-- Ticket médio: R$ ${salesData.averageTicket.toFixed(2)}
-- Variação vs período anterior: ${salesData.changePercent > 0 ? '+' : ''}${salesData.changePercent.toFixed(1)}%
+- Faturamento total: R$ ${safeToFixed(salesData.revenue)}
+- Total de produtos vendidos: ${salesData.itemsSold || 0}
+- Ticket médio: R$ ${safeToFixed(salesData.averageTicket)}
+- Total de vendas: ${salesData.totalSales || 0}
 
 ESTOQUE:
-- Produtos em alerta de estoque baixo: ${stockData.lowStockCount}
-${stockData.criticalProducts.length > 0 ? `- Produtos críticos: ${stockData.criticalProducts.join(', ')}` : ''}
+- Produtos em alerta de estoque baixo: ${stockData.lowStockCount || 0}
+${(stockData.criticalProducts || []).length > 0 ? `- Produtos críticos: ${stockData.criticalProducts.join(', ')}` : ''}
 
 TOP PRODUTOS:
-${salesData.topProducts.map((p: any) => `- ${p.name}: ${p.quantity} unidades vendidas (R$ ${p.revenue.toFixed(2)})`).join('\n')}
+${topProductsList}
 
 TOP CLIENTES:
-${customersData.topCustomers.map((c: any) => `- ${c.name}: R$ ${c.total.toFixed(2)} em compras`).join('\n')}
+${topCustomersList}
 
 Forneça insights sobre:
 1. Tendências de vendas e oportunidades
