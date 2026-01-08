@@ -38,8 +38,36 @@ serve(async (req) => {
 
     const { customerName, couponValue, expiryDate } = await req.json();
     
+    // Validate required fields
     if (!customerName || !couponValue || !expiryDate) {
-      throw new Error("Dados incompletos");
+      return new Response(
+        JSON.stringify({ error: "Dados incompletos: customerName, couponValue e expiryDate são obrigatórios" }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate customerName
+    if (typeof customerName !== 'string' || customerName.length < 1 || customerName.length > 100) {
+      return new Response(
+        JSON.stringify({ error: "Nome do cliente deve ter entre 1 e 100 caracteres" }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate couponValue (must be a positive number)
+    if (typeof couponValue !== 'number' || couponValue <= 0 || couponValue > 10000) {
+      return new Response(
+        JSON.stringify({ error: "Valor do cupom inválido" }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate expiryDate format (basic date string validation)
+    if (typeof expiryDate !== 'string' || expiryDate.length < 5 || expiryDate.length > 20) {
+      return new Response(
+        JSON.stringify({ error: "Formato de data de expiração inválido" }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");

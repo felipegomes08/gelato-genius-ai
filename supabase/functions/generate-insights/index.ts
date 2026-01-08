@@ -38,6 +38,43 @@ serve(async (req) => {
 
     const { salesData, stockData, customersData, period } = await req.json();
     
+    // Validate required data structures
+    if (!salesData || typeof salesData !== 'object') {
+      return new Response(
+        JSON.stringify({ error: 'salesData é obrigatório e deve ser um objeto' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!stockData || typeof stockData !== 'object') {
+      return new Response(
+        JSON.stringify({ error: 'stockData é obrigatório e deve ser um objeto' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!customersData || typeof customersData !== 'object') {
+      return new Response(
+        JSON.stringify({ error: 'customersData é obrigatório e deve ser um objeto' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!period || typeof period !== 'string' || period.length > 100) {
+      return new Response(
+        JSON.stringify({ error: 'period é obrigatório e deve ser uma string válida' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate salesData fields
+    if (typeof salesData.revenue !== 'number' || typeof salesData.itemsSold !== 'number') {
+      return new Response(
+        JSON.stringify({ error: 'salesData deve conter revenue e itemsSold como números' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY não configurada');

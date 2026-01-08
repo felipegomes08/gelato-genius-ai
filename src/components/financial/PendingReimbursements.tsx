@@ -28,6 +28,7 @@ interface Transaction {
 export function PendingReimbursements() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
+  const [isLoadingReceipt, setIsLoadingReceipt] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: pendingTransactions = [], isLoading } = useQuery({
@@ -43,6 +44,33 @@ export function PendingReimbursements() {
       return data as Transaction[];
     },
   });
+
+  const handleViewReceipt = async (receiptPath: string) => {
+    setIsLoadingReceipt(true);
+    try {
+      // Generate signed URL for private bucket access
+      const { data, error } = await supabase.storage
+        .from('receipts')
+        .createSignedUrl(receiptPath, 3600); // 1 hour expiry
+      
+      if (error) {
+        // Fallback: if it's already a full URL (old data), use it directly
+        if (receiptPath.startsWith('http')) {
+          setReceiptPreview(receiptPath);
+        } else {
+          console.error('Error generating signed URL:', error);
+          toast.error('Erro ao carregar comprovante');
+        }
+      } else if (data?.signedUrl) {
+        setReceiptPreview(data.signedUrl);
+      }
+    } catch (err) {
+      console.error('Error loading receipt:', err);
+      toast.error('Erro ao carregar comprovante');
+    } finally {
+      setIsLoadingReceipt(false);
+    }
+  };
 
   const reimburseMutation = useMutation({
     mutationFn: async (ids: string[]) => {
@@ -193,9 +221,14 @@ export function PendingReimbursements() {
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8"
-                    onClick={() => setReceiptPreview(transaction.receipt_url)}
+                    onClick={() => handleViewReceipt(transaction.receipt_url!)}
+                    disabled={isLoadingReceipt}
                   >
-                    <Eye className="h-4 w-4" />
+                    {isLoadingReceipt ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
                   </Button>
                 )}
                 <Button
