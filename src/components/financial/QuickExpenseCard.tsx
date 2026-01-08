@@ -107,12 +107,12 @@ export function QuickExpenseCard() {
         return;
       }
 
-      // Upload image if exists
+      // Upload image if exists - store the file path (not public URL since bucket is private)
       let receiptUrl = null;
       if (imagePreview) {
         const fileName = `${user.id}/${Date.now()}.jpg`;
         const base64Data = imagePreview.split(',')[1];
-        const { data: uploadData, error: uploadError } = await supabase.storage
+        const { error: uploadError } = await supabase.storage
           .from('receipts')
           .upload(fileName, decode(base64Data), {
             contentType: 'image/jpeg'
@@ -121,10 +121,8 @@ export function QuickExpenseCard() {
         if (uploadError) {
           console.error('Upload error:', uploadError);
         } else {
-          const { data: { publicUrl } } = supabase.storage
-            .from('receipts')
-            .getPublicUrl(fileName);
-          receiptUrl = publicUrl;
+          // Store the file path - signed URLs will be generated when viewing
+          receiptUrl = fileName;
         }
       }
 

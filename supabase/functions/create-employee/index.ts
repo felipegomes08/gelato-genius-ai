@@ -15,12 +15,45 @@ serve(async (req) => {
   try {
     const { email, password, full_name, phone } = await req.json();
 
-    console.log("Creating employee:", { email, full_name, phone });
+    console.log("Creating employee:", { email, full_name });
 
     // Validate required fields
     if (!email || !password || !full_name) {
       return new Response(
         JSON.stringify({ error: "Email, senha e nome completo são obrigatórios" }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return new Response(
+        JSON.stringify({ error: "Formato de email inválido" }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate password strength (min 6 chars to match Supabase Auth minimum)
+    if (password.length < 6) {
+      return new Response(
+        JSON.stringify({ error: "Senha deve ter no mínimo 6 caracteres" }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate full_name length
+    if (full_name.length < 2 || full_name.length > 100) {
+      return new Response(
+        JSON.stringify({ error: "Nome deve ter entre 2 e 100 caracteres" }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate phone format if provided
+    if (phone && (phone.length < 8 || phone.length > 20)) {
+      return new Response(
+        JSON.stringify({ error: "Telefone deve ter entre 8 e 20 caracteres" }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
