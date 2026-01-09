@@ -16,7 +16,7 @@ export function PaymentMethodSelector({ value, onChange }: PaymentMethodSelector
         type="single"
         value={value || ""}
         onValueChange={(v) => onChange(v as any)}
-        className="grid grid-cols-2 gap-2"
+        className="grid grid-cols-3 gap-2"
       >
         <ToggleGroupItem
           value="cash"
@@ -60,7 +60,7 @@ export function PaymentMethodSelector({ value, onChange }: PaymentMethodSelector
 
         <ToggleGroupItem
           value="ifood"
-          className="h-16 flex flex-col gap-1 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground col-span-2"
+          className="h-16 flex flex-col gap-1 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
         >
           <Bike className="h-5 w-5" />
           <span className="text-xs">IFood</span>
