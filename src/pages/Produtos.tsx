@@ -169,12 +169,26 @@ export default function Produtos() {
         className={`shadow-sm hover:shadow-md transition-all ${!product.is_active ? 'opacity-60' : ''}`}
       >
         <CardContent className="p-4">
-          <div className="flex items-start justify-between mb-3">
-            <div className="flex-1">
+          <div className="flex items-start gap-3 mb-3">
+            {/* Product image */}
+            <div className="w-16 h-16 rounded-lg bg-muted flex-shrink-0 overflow-hidden">
+              {product.image_url ? (
+                <img 
+                  src={product.image_url} 
+                  alt={product.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <Package className="h-6 w-6 text-muted-foreground" />
+                </div>
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
-                <h3 className="font-semibold">{product.name}</h3>
+                <h3 className="font-semibold truncate">{product.name}</h3>
                 {!product.is_active && (
-                  <Badge variant="secondary" className="text-xs">
+                  <Badge variant="secondary" className="text-xs flex-shrink-0">
                     Inativo
                   </Badge>
                 )}
