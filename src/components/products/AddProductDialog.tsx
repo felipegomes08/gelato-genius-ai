@@ -1,3 +1,4 @@
+import { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +10,7 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, ImagePlus, X } from "lucide-react";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { unformatCurrency } from "@/lib/formatters";
@@ -40,6 +41,10 @@ interface AddProductDialogProps {
 
 export function AddProductDialog({ open, onOpenChange }: AddProductDialogProps) {
   const queryClient = useQueryClient();
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
@@ -54,6 +59,30 @@ export function AddProductDialog({ open, onOpenChange }: AddProductDialogProps) 
     },
   });
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("A imagem deve ter no máximo 5MB");
+        return;
+      }
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   const controlsStock = form.watch("controls_stock");
 
   const onSubmit = async (data: ProductFormData) => {
@@ -65,14 +94,42 @@ export function AddProductDialog({ open, onOpenChange }: AddProductDialogProps) 
         return;
       }
 
+      let imageUrl: string | null = null;
+
+      // Upload image if exists
+      if (imageFile) {
+        setUploadingImage(true);
+        const fileExt = imageFile.name.split('.').pop();
+        const fileName = `${crypto.randomUUID()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('product-images')
+          .upload(fileName, imageFile);
+
+        if (uploadError) {
+          console.error('Upload error:', uploadError);
+          toast.error("Erro ao fazer upload da imagem");
+          setUploadingImage(false);
+          return;
+        }
+
+        const { data: publicUrl } = supabase.storage
+          .from('product-images')
+          .getPublicUrl(fileName);
+        
+        imageUrl = publicUrl.publicUrl;
+        setUploadingImage(false);
+      }
+
       const priceValue = data.price ? unformatCurrency(data.price) : null;
 
       const { error } = await supabase.from("products").insert({
         name: data.name,
         price: priceValue && priceValue > 0 ? priceValue : null,
-        category: "", // Keep for backward compatibility
+        category: "",
         category_id: data.category_id || null,
         description: data.description || null,
+        image_url: imageUrl,
         controls_stock: data.controls_stock,
         current_stock: data.controls_stock ? Number(data.current_stock || 0) : null,
         low_stock_threshold: data.controls_stock ? Number(data.low_stock_threshold || 15) : null,
@@ -87,6 +144,7 @@ export function AddProductDialog({ open, onOpenChange }: AddProductDialogProps) 
       await queryClient.invalidateQueries({ queryKey: ["products-active"] });
       await queryClient.invalidateQueries({ queryKey: ["category-product-counts"] });
       form.reset();
+      removeImage();
       onOpenChange(false);
     } catch (error: any) {
       toast.error(error.message || "Erro ao adicionar produto");
@@ -101,6 +159,47 @@ export function AddProductDialog({ open, onOpenChange }: AddProductDialogProps) 
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {/* Image Upload */}
+            <div className="space-y-2">
+              <FormLabel>Foto do Produto</FormLabel>
+              <div className="flex items-center gap-4">
+                {imagePreview ? (
+                  <div className="relative">
+                    <img
+                      src={imagePreview}
+                      alt="Preview"
+                      className="w-24 h-24 object-cover rounded-lg border"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute -top-2 -right-2 h-6 w-6"
+                      onClick={removeImage}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-24 h-24 border-2 border-dashed rounded-lg flex flex-col items-center justify-center text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+                  >
+                    <ImagePlus className="h-6 w-6 mb-1" />
+                    <span className="text-xs">Adicionar</span>
+                  </button>
+                )}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="hidden"
+                />
+              </div>
+            </div>
+
             <FormField
               control={form.control}
               name="name"
@@ -239,14 +338,15 @@ export function AddProductDialog({ open, onOpenChange }: AddProductDialogProps) 
                 variant="outline"
                 onClick={() => {
                   form.reset();
+                  removeImage();
                   onOpenChange(false);
                 }}
-                disabled={form.formState.isSubmitting}
+                disabled={form.formState.isSubmitting || uploadingImage}
               >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting && (
+              <Button type="submit" disabled={form.formState.isSubmitting || uploadingImage}>
+                {(form.formState.isSubmitting || uploadingImage) && (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 )}
                 Adicionar

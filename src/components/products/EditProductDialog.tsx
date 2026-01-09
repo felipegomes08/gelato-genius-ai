@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
+import { Loader2, ImagePlus, X } from "lucide-react";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { unformatCurrency, formatNumberToBRL } from "@/lib/formatters";
 import { CategorySelect } from "@/components/categories/CategorySelect";
@@ -42,6 +42,10 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
   const [currentStock, setCurrentStock] = useState("");
   const [lowStockThreshold, setLowStockThreshold] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [existingImageUrl, setExistingImageUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -54,8 +58,40 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
       setControlsStock(product.controls_stock);
       setCurrentStock(product.current_stock?.toString() || "0");
       setLowStockThreshold(product.low_stock_threshold?.toString() || "15");
+      setExistingImageUrl(product.image_url);
+      setImagePreview(product.image_url);
+      setImageFile(null);
     }
   }, [product]);
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "Erro",
+          description: "A imagem deve ter no máximo 5MB",
+          variant: "destructive",
+        });
+        return;
+      }
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    setExistingImageUrl(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,6 +100,40 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
     setIsLoading(true);
 
     try {
+      let imageUrl: string | null = existingImageUrl;
+
+      // Upload new image if selected
+      if (imageFile) {
+        const fileExt = imageFile.name.split('.').pop();
+        const fileName = `${crypto.randomUUID()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('product-images')
+          .upload(fileName, imageFile);
+
+        if (uploadError) {
+          console.error('Upload error:', uploadError);
+          toast({
+            title: "Erro ao fazer upload",
+            description: "Não foi possível fazer upload da imagem",
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return;
+        }
+
+        const { data: publicUrl } = supabase.storage
+          .from('product-images')
+          .getPublicUrl(fileName);
+        
+        imageUrl = publicUrl.publicUrl;
+      }
+
+      // If image was removed
+      if (!imagePreview && !imageFile) {
+        imageUrl = null;
+      }
+
       const priceValue = price ? unformatCurrency(price) : null;
 
       const { error } = await supabase
@@ -73,6 +143,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
           price: priceValue && priceValue > 0 ? priceValue : null,
           category_id: categoryId || null,
           description: description || null,
+          image_url: imageUrl,
           controls_stock: controlsStock,
           current_stock: controlsStock ? parseInt(currentStock) : null,
           low_stock_threshold: controlsStock ? parseInt(lowStockThreshold) : null,
@@ -109,6 +180,47 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
           <DialogTitle>Editar Produto</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Image Upload */}
+          <div className="space-y-2">
+            <Label>Foto do Produto</Label>
+            <div className="flex items-center gap-4">
+              {imagePreview ? (
+                <div className="relative">
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
+                    className="w-24 h-24 object-cover rounded-lg border"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute -top-2 -right-2 h-6 w-6"
+                    onClick={removeImage}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-24 h-24 border-2 border-dashed rounded-lg flex flex-col items-center justify-center text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+                >
+                  <ImagePlus className="h-6 w-6 mb-1" />
+                  <span className="text-xs">Adicionar</span>
+                </button>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="hidden"
+              />
+            </div>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="edit-name">Nome do Produto *</Label>
             <Input
