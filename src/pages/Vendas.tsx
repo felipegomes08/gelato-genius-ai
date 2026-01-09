@@ -14,7 +14,7 @@ import { EditCouponMessageDialog } from "@/components/sales/EditCouponMessageDia
 import { CheckoutSummary } from "@/components/sales/CheckoutSummary";
 import { PaymentMethodSelector } from "@/components/sales/PaymentMethodSelector";
 import { SalesProductGrid } from "@/components/sales/SalesProductGrid";
-import { Plus, Minus, X, User, Percent, Sparkles } from "lucide-react";
+import { Plus, Minus, X, User, Percent, Sparkles, Package } from "lucide-react";
 import { toast } from "sonner";
 import { generateCouponMessage } from "@/lib/couponMessages";
 import { useAppSettings } from "@/hooks/useAppSettings";
@@ -28,6 +28,7 @@ interface CartItem {
   controls_stock: boolean;
   current_stock: number | null;
   customPrice?: number;
+  image_url?: string | null;
 }
 
 interface Customer {
@@ -98,6 +99,7 @@ export default function Vendas() {
         controls_stock: product.controls_stock,
         current_stock: product.current_stock,
         customPrice: 0,
+        image_url: product.image_url,
       };
       
       setCart([...cart, newItem]);
@@ -136,6 +138,7 @@ export default function Vendas() {
         quantity: 1,
         controls_stock: product.controls_stock,
         current_stock: product.current_stock,
+        image_url: product.image_url,
       };
       setCart([...cart, newItem]);
     }
@@ -529,21 +532,37 @@ export default function Vendas() {
               <div className="space-y-2">
                 {cart.map((item) => (
                   <Card key={item.cartItemId} className="p-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex-1 flex items-center gap-2">
-                        <span className="font-medium text-sm">{item.name}</span>
-                        {item.price === null && (
-                          <Badge variant="secondary" className="text-xs">No peso</Badge>
+                    <div className="flex items-start gap-3 mb-2">
+                      {/* Product image */}
+                      <div className="w-12 h-12 rounded-md bg-muted flex-shrink-0 overflow-hidden">
+                        {item.image_url ? (
+                          <img 
+                            src={item.image_url} 
+                            alt={item.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Package className="h-5 w-5 text-muted-foreground" />
+                          </div>
                         )}
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeFromCart(item.cartItemId)}
-                        className="h-8 w-8"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
+                      <div className="flex-1 min-w-0 flex items-start justify-between">
+                        <div className="flex-1 flex items-center gap-2">
+                          <span className="font-medium text-sm truncate">{item.name}</span>
+                          {item.price === null && (
+                            <Badge variant="secondary" className="text-xs flex-shrink-0">No peso</Badge>
+                          )}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeFromCart(item.cartItemId)}
+                          className="h-8 w-8 flex-shrink-0"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                     
                     {/* Campo de preço manual para produtos no peso */}
