@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { Search, ShoppingCart, ArrowLeft, Zap } from "lucide-react";
+import { Search, ShoppingCart, ArrowLeft, Zap, Package } from "lucide-react";
 import { cn, normalizeText } from "@/lib/utils";
 import { toast } from "sonner";
 interface Product {
@@ -16,6 +16,7 @@ interface Product {
   category_id: string | null;
   controls_stock: boolean;
   current_stock: number | null;
+  image_url?: string | null;
 }
 
 interface Category {
@@ -162,30 +163,44 @@ export function SalesProductGrid({ products, onProductClick, isLoading }: SalesP
         <button
           key={product.id}
           onClick={() => handleProductClick(product)}
-          className="group relative flex flex-col gap-1 p-3 rounded-lg border bg-card hover:bg-accent/50 hover:border-primary/50 transition-all text-left"
+          className="group relative flex flex-col gap-1 rounded-lg border bg-card hover:bg-accent/50 hover:border-primary/50 transition-all text-left overflow-hidden"
         >
-          <div className="flex items-start justify-between gap-1">
-            <p className="font-medium text-sm leading-tight line-clamp-2 flex-1">
-              {product.name}
-            </p>
-            <ShoppingCart className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
-          </div>
-          <div className="flex items-center justify-between gap-2">
-            <p className="font-bold text-primary text-sm">
-              {product.price !== null ? (
-                `R$ ${product.price.toFixed(2)}`
-              ) : (
-                <span className="text-xs text-muted-foreground">Preço no peso</span>
-              )}
-            </p>
-            {product.controls_stock && (
-              <Badge 
-                variant={product.current_stock && product.current_stock > 0 ? "secondary" : "destructive"}
-                className="text-[10px] h-4 px-1"
-              >
-                {product.current_stock || 0}
-              </Badge>
+          {/* Product image */}
+          <div className="w-full aspect-square bg-muted flex items-center justify-center">
+            {product.image_url ? (
+              <img 
+                src={product.image_url} 
+                alt={product.name}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <Package className="h-8 w-8 text-muted-foreground" />
             )}
+          </div>
+          <div className="p-2 space-y-1">
+            <div className="flex items-start justify-between gap-1">
+              <p className="font-medium text-sm leading-tight line-clamp-2 flex-1">
+                {product.name}
+              </p>
+              <ShoppingCart className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <p className="font-bold text-primary text-sm">
+                {product.price !== null ? (
+                  `R$ ${product.price.toFixed(2)}`
+                ) : (
+                  <span className="text-xs text-muted-foreground">Preço no peso</span>
+                )}
+              </p>
+              {product.controls_stock && (
+                <Badge 
+                  variant={product.current_stock && product.current_stock > 0 ? "secondary" : "destructive"}
+                  className="text-[10px] h-4 px-1"
+                >
+                  {product.current_stock || 0}
+                </Badge>
+              )}
+            </div>
           </div>
         </button>
       ))}
@@ -208,14 +223,27 @@ export function SalesProductGrid({ products, onProductClick, isLoading }: SalesP
               <button
                 key={product.id}
                 onClick={() => handleProductClick(product)}
-                className="flex-shrink-0 flex flex-col items-start gap-0.5 p-2 rounded-lg border bg-card hover:bg-accent/50 hover:border-primary/50 transition-all text-left min-w-[100px] max-w-[120px]"
+                className="flex-shrink-0 flex flex-col rounded-lg border bg-card hover:bg-accent/50 hover:border-primary/50 transition-all text-left w-[100px] overflow-hidden"
               >
-                <p className="font-medium text-xs leading-tight line-clamp-2 w-full">
-                  {product.name}
-                </p>
-                <p className="font-bold text-primary text-xs">
-                  {product.price !== null ? `R$ ${product.price.toFixed(2)}` : "—"}
-                </p>
+                <div className="w-full h-16 bg-muted flex items-center justify-center">
+                  {product.image_url ? (
+                    <img 
+                      src={product.image_url} 
+                      alt={product.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <Package className="h-5 w-5 text-muted-foreground" />
+                  )}
+                </div>
+                <div className="p-2">
+                  <p className="font-medium text-xs leading-tight line-clamp-2 w-full">
+                    {product.name}
+                  </p>
+                  <p className="font-bold text-primary text-xs">
+                    {product.price !== null ? `R$ ${product.price.toFixed(2)}` : "—"}
+                  </p>
+                </div>
               </button>
             ))}
           </div>
