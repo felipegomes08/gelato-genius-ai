@@ -5,8 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
-import logoChurrosteria from "@/assets/logo-churrosteria.png";
+import logoDefault from "@/assets/logo-churrosteria.png";
 import { useAuth } from "@/hooks/useAuth";
+import { usePublicStoreSettings } from "@/hooks/useStoreSettings";
 import { toast } from "sonner";
 
 export default function Login() {
@@ -15,6 +16,7 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { signIn, user } = useAuth();
+  const { data: storeSettings } = usePublicStoreSettings();
 
   useEffect(() => {
     if (user) {
@@ -38,20 +40,23 @@ export default function Login() {
     }
   };
 
+  const logoUrl = storeSettings?.store_logo_url || logoDefault;
+  const storeName = storeSettings?.menu_store_name || "Churrosteria";
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-b from-background to-primary/5">
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="space-y-4 text-center">
           <div className="flex justify-center">
             <img 
-              src={logoChurrosteria} 
-              alt="Logo Churrosteria" 
-              className="h-24 w-24 object-contain"
+              src={logoUrl} 
+              alt={storeName} 
+              className="h-24 w-24 object-contain rounded-xl"
             />
           </div>
           <div>
             <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              Churrosteria
+              {storeName}
             </CardTitle>
             <CardDescription className="text-base mt-2">
               Sistema de gestão inteligente para sua sorveteria

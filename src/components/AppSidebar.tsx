@@ -10,8 +10,9 @@ import {
   SidebarMenuButton,
   useSidebar,
 } from "@/components/ui/sidebar";
-import logo from "@/assets/logo-churrosteria.png";
+import logoDefault from "@/assets/logo-churrosteria.png";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useStoreSettings } from "@/hooks/useStoreSettings";
 
 type PermissionKey = 
   | "can_access_sales"
@@ -47,6 +48,7 @@ const navItems: NavItem[] = [
 export function AppSidebar() {
   const { open } = useSidebar();
   const { isMaster, hasPermission, loading } = usePermissions();
+  const { data: storeSettings } = useStoreSettings();
 
   const visibleItems = navItems.filter((item) => {
     if (loading) return !item.permission && !item.requireMaster;
@@ -56,19 +58,22 @@ export function AppSidebar() {
     return false;
   });
 
+  const logoUrl = storeSettings?.store_logo_url || logoDefault;
+  const storeName = storeSettings?.menu_store_name || "Churrosteria";
+
   return (
     <Sidebar collapsible="icon">
       <SidebarContent>
         <div className="p-4 border-b">
           <div className="flex items-center gap-3">
             <img 
-              src={logo} 
-              alt="Churrosteria" 
+              src={logoUrl} 
+              alt={storeName} 
               className="h-8 w-8 rounded-full object-cover flex-shrink-0" 
             />
             {open && (
               <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                Churrosteria
+                {storeName}
               </h1>
             )}
           </div>

@@ -6,11 +6,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Save, MessageSquare, Settings2 } from "lucide-react";
+import { Save, MessageSquare, Settings2, Store } from "lucide-react";
 import { useAppSettings, CouponRules } from "@/hooks/useAppSettings";
 import { toast } from "sonner";
 import { CurrencyInput, getCurrencyValue } from "@/components/ui/currency-input";
 import { formatNumberToBRL } from "@/lib/formatters";
+import { StoreSettingsTab } from "@/components/settings/StoreSettingsTab";
 
 export default function Configuracoes() {
   const { settings, updateSetting, isUpdating } = useAppSettings();
@@ -85,17 +86,27 @@ export default function Configuracoes() {
       </header>
 
       <main className="flex-1 p-4 sm:p-6 space-y-6 pb-24">
-        <Tabs defaultValue="messages" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+        <Tabs defaultValue="store" className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="store" className="flex items-center gap-2">
+              <Store className="h-4 w-4" />
+              <span className="hidden sm:inline">Loja e Cardápio</span>
+              <span className="sm:hidden">Loja</span>
+            </TabsTrigger>
             <TabsTrigger value="messages" className="flex items-center gap-2">
               <MessageSquare className="h-4 w-4" />
-              Mensagens
+              <span className="hidden sm:inline">Mensagens</span>
+              <span className="sm:hidden">Msgs</span>
             </TabsTrigger>
             <TabsTrigger value="rules" className="flex items-center gap-2">
               <Settings2 className="h-4 w-4" />
               Regras
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="store" className="mt-6">
+            <StoreSettingsTab />
+          </TabsContent>
 
           <TabsContent value="messages" className="space-y-6 mt-6">
             <Card>

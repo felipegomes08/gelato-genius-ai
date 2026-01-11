@@ -18,6 +18,7 @@ import Clientes from "./pages/Clientes";
 import Tarefas from "./pages/Tarefas";
 import Notificacoes from "./pages/Notificacoes";
 import Configuracoes from "./pages/Configuracoes";
+import Cardapio from "./pages/Cardapio";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,7 +31,9 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Routes>
+            {/* Public routes */}
             <Route path="/login" element={<Login />} />
+            <Route path="/cardapio" element={<Cardapio />} />
             
             {/* Protected routes with persistent layout */}
             <Route element={<MainLayout />}>
