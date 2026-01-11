@@ -12,9 +12,10 @@ import {
 } from "./ui/dropdown-menu";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useStoreSettings } from "@/hooks/useStoreSettings";
 import { ChangePasswordDialog } from "./ChangePasswordDialog";
 import { NotificationBell } from "./notifications/NotificationBell";
-import logo from "@/assets/logo-churrosteria.png";
+import logoDefault from "@/assets/logo-churrosteria.png";
 
 interface HeaderProps {
   title?: string;
@@ -23,6 +24,7 @@ interface HeaderProps {
 export const Header = ({ title = "Churrosteria" }: HeaderProps) => {
   const { user, signOut } = useAuth();
   const { isMaster } = usePermissions();
+  const { data: storeSettings } = useStoreSettings();
   const navigate = useNavigate();
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
 
@@ -31,13 +33,16 @@ export const Header = ({ title = "Churrosteria" }: HeaderProps) => {
     navigate("/login");
   };
 
+  const logoUrl = storeSettings?.store_logo_url || logoDefault;
+  const storeName = storeSettings?.menu_store_name || title;
+
   return (
     <>
       <div className="flex items-center justify-between flex-1">
         <div className="flex items-center gap-3">
-          <img src={logo} alt="Churrosteria" className="h-8 w-8 rounded-full object-cover" />
+          <img src={logoUrl} alt={storeName} className="h-8 w-8 rounded-full object-cover" />
           <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            {title}
+            {storeName}
           </h1>
         </div>
         <div className="flex items-center gap-1">
