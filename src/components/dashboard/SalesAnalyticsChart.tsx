@@ -456,28 +456,33 @@ export function SalesAnalyticsChart() {
           {period === 'custom' && (
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="h-9 gap-2">
+                <Button variant="outline" size="sm" className="h-9 gap-2 min-w-[200px]">
                   <CalendarIcon className="h-4 w-4" />
                   {dateRange.from ? (
                     dateRange.to ? (
                       <>
-                        {format(dateRange.from, "dd/MM")} - {format(dateRange.to, "dd/MM")}
+                        {format(dateRange.from, "dd/MM/yyyy")} - {format(dateRange.to, "dd/MM/yyyy")}
                       </>
                     ) : (
                       format(dateRange.from, "dd/MM/yyyy")
                     )
                   ) : (
-                    "Selecionar período"
+                    "Selecionar datas"
                   )}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
+                <div className="p-3 border-b">
+                  <p className="text-sm font-medium">Selecione o período</p>
+                  <p className="text-xs text-muted-foreground">Clique na data inicial e depois na data final</p>
+                </div>
                 <Calendar
                   mode="range"
                   selected={dateRange}
                   onSelect={(range) => setDateRange({ from: range?.from, to: range?.to })}
                   numberOfMonths={2}
                   locale={ptBR}
+                  disabled={(date) => date > new Date()}
                   className={cn("p-3 pointer-events-auto")}
                 />
               </PopoverContent>
