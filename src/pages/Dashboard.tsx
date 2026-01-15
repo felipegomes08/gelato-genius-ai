@@ -8,6 +8,8 @@ import { startOfDay, endOfDay, subDays, startOfMonth, endOfMonth, subMonths } fr
 import { useState, useMemo } from "react";
 import { ExpiringCouponsCard } from "@/components/dashboard/ExpiringCouponsCard";
 import { SalesAnalyticsChart } from "@/components/dashboard/SalesAnalyticsChart";
+import { ProductsSoldByDayChart } from "@/components/dashboard/ProductsSoldByDayChart";
+import { FinancialBalanceChart } from "@/components/dashboard/FinancialBalanceChart";
 
 type PeriodType = 'today' | '7days' | '30days' | 'month' | 'all';
 
@@ -489,6 +491,12 @@ export default function Dashboard() {
 
       {/* Sales Analytics Chart */}
       <SalesAnalyticsChart />
+
+      {/* Products Sold by Day Chart */}
+      <ProductsSoldByDayChart />
+
+      {/* Financial Balance Chart */}
+      <FinancialBalanceChart />
 
       {/* Expiring Coupons Card */}
       <ExpiringCouponsCard />
