@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { startOfDay, endOfDay, subDays, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { useState, useMemo } from "react";
 import { ExpiringCouponsCard } from "@/components/dashboard/ExpiringCouponsCard";
+import { SalesAnalyticsChart } from "@/components/dashboard/SalesAnalyticsChart";
 
 type PeriodType = 'today' | '7days' | '30days' | 'month' | 'all';
 
@@ -485,6 +486,9 @@ export default function Dashboard() {
           )}
         </CardContent>
       </Card>
+
+      {/* Sales Analytics Chart */}
+      <SalesAnalyticsChart />
 
       {/* Expiring Coupons Card */}
       <ExpiringCouponsCard />
