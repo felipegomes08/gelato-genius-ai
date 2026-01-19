@@ -72,14 +72,14 @@ export function StoreSettingsTab() {
   const handleSave = async () => {
     try {
       await Promise.all([
-        updateSettingMutation.mutateAsync({ key: "store_logo_url", value: formData.store_logo_url || null }),
+        updateSettingMutation.mutateAsync({ key: "store_logo_url", value: formData.store_logo_url || "" }),
         updateSettingMutation.mutateAsync({ key: "menu_enabled", value: formData.menu_enabled }),
-        updateSettingMutation.mutateAsync({ key: "menu_banner_url", value: formData.menu_banner_url || null }),
-        updateSettingMutation.mutateAsync({ key: "menu_store_name", value: formData.menu_store_name }),
-        updateSettingMutation.mutateAsync({ key: "menu_description", value: formData.menu_description }),
-        updateSettingMutation.mutateAsync({ key: "menu_whatsapp", value: formData.menu_whatsapp }),
-        updateSettingMutation.mutateAsync({ key: "menu_address", value: formData.menu_address }),
-        updateSettingMutation.mutateAsync({ key: "menu_opening_hours", value: formData.menu_opening_hours }),
+        updateSettingMutation.mutateAsync({ key: "menu_banner_url", value: formData.menu_banner_url || "" }),
+        updateSettingMutation.mutateAsync({ key: "menu_store_name", value: formData.menu_store_name || "" }),
+        updateSettingMutation.mutateAsync({ key: "menu_description", value: formData.menu_description || "" }),
+        updateSettingMutation.mutateAsync({ key: "menu_whatsapp", value: formData.menu_whatsapp || "" }),
+        updateSettingMutation.mutateAsync({ key: "menu_address", value: formData.menu_address || "" }),
+        updateSettingMutation.mutateAsync({ key: "menu_opening_hours", value: formData.menu_opening_hours || "" }),
       ]);
       toast.success("Configurações salvas com sucesso!");
     } catch (error) {
@@ -140,13 +140,13 @@ export function StoreSettingsTab() {
 
   const handleRemoveLogo = async () => {
     setFormData((prev) => ({ ...prev, store_logo_url: "" }));
-    await updateSettingMutation.mutateAsync({ key: "store_logo_url", value: null });
+    await updateSettingMutation.mutateAsync({ key: "store_logo_url", value: "" });
     toast.success("Logo removido!");
   };
 
   const handleRemoveBanner = async () => {
     setFormData((prev) => ({ ...prev, menu_banner_url: "" }));
-    await updateSettingMutation.mutateAsync({ key: "menu_banner_url", value: null });
+    await updateSettingMutation.mutateAsync({ key: "menu_banner_url", value: "" });
     toast.success("Banner removido!");
   };
 
