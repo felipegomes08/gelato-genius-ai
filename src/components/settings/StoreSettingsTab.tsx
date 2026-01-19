@@ -13,6 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import logoDefault from "@/assets/logo-churrosteria.png";
+import { MenuOrderSettings } from "./MenuOrderSettings";
 
 export function StoreSettingsTab() {
   const { user } = useAuth();
@@ -396,6 +397,9 @@ export function StoreSettingsTab() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Menu Order Settings */}
+      <MenuOrderSettings />
 
       {/* Save Button */}
       <div className="flex justify-end">
