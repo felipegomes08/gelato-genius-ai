@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Search, MessageCircle, AlertCircle } from "lucide-react";
+import { Search, MessageCircle, AlertCircle, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { usePublicStoreSettings } from "@/hooks/useStoreSettings";
 import { MenuHeader } from "@/components/cardapio/MenuHeader";
@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 
 interface Product {
   id: string;
@@ -181,6 +182,20 @@ export default function Cardapio() {
           )}
         </div>
       </div>
+
+      {/* Clear Filter Badge - Fixed position when category is selected */}
+      {selectedCategory && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-40">
+          <Badge
+            variant="secondary"
+            className="cursor-pointer py-2 px-4 text-sm shadow-lg border bg-card hover:bg-accent gap-2 flex items-center"
+            onClick={() => setSelectedCategory(null)}
+          >
+            <X className="h-4 w-4" />
+            Limpar filtro
+          </Badge>
+        </div>
+      )}
 
       {/* Products */}
       <main className="px-4 py-6 max-w-6xl mx-auto">

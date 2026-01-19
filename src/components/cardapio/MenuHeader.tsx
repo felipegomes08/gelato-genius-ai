@@ -31,7 +31,7 @@ export function MenuHeader({
   return (
     <header className="relative">
       {/* Banner */}
-      <div className="h-40 sm:h-56 bg-gradient-to-r from-primary/20 to-accent/20 overflow-hidden">
+      <div className="h-32 sm:h-44 bg-gradient-to-r from-primary/20 to-accent/20 overflow-hidden">
         {bannerUrl ? (
           <img
             src={bannerUrl}
@@ -43,49 +43,59 @@ export function MenuHeader({
         )}
       </div>
 
-      {/* Logo and Info */}
-      <div className="relative px-4 pb-4 -mt-12">
-        <div className="flex flex-col sm:flex-row sm:items-end gap-4">
-          {/* Logo */}
-          <div className="w-24 h-24 rounded-2xl border-4 border-background bg-background shadow-lg overflow-hidden flex-shrink-0">
-            <img
-              src={logoUrl || logoDefault}
-              alt={storeName}
-              className="w-full h-full object-cover"
-            />
-          </div>
-
-          {/* Store Info */}
-          <div className="flex-1 sm:pb-2">
-            <h1 className="text-2xl font-bold text-foreground">{storeName}</h1>
-            <p className="text-muted-foreground text-sm mt-1">{description}</p>
-            
-            <div className="flex flex-wrap items-center gap-4 mt-3 text-sm text-muted-foreground">
-              {address && (
-                <div className="flex items-center gap-1.5">
-                  <MapPin className="h-4 w-4 text-primary" />
-                  <span>{address}</span>
-                </div>
-              )}
-              {openingHours && (
-                <div className="flex items-center gap-1.5">
-                  <Clock className="h-4 w-4 text-primary" />
-                  <span>{openingHours}</span>
-                </div>
-              )}
+      {/* Logo and Info Card */}
+      <div className="relative px-4 -mt-10">
+        <div className="bg-card rounded-xl shadow-lg border p-4">
+          <div className="flex flex-col sm:flex-row gap-4">
+            {/* Logo */}
+            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl border-4 border-background bg-background shadow-md overflow-hidden flex-shrink-0 -mt-12 sm:-mt-14">
+              <img
+                src={logoUrl || logoDefault}
+                alt={storeName}
+                className="w-full h-full object-cover"
+              />
             </div>
-          </div>
 
-          {/* WhatsApp Button */}
-          {whatsapp && (
-            <Button
-              onClick={handleWhatsApp}
-              className="gap-2 bg-green-600 hover:bg-green-700 text-white shadow-lg"
-            >
-              <MessageCircle className="h-4 w-4" />
-              WhatsApp
-            </Button>
-          )}
+            {/* Store Info */}
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground truncate">
+                {storeName}
+              </h1>
+              {description && (
+                <p className="text-muted-foreground text-sm mt-1 line-clamp-2">
+                  {description}
+                </p>
+              )}
+              
+              <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-4 mt-3 text-sm text-muted-foreground">
+                {address && (
+                  <div className="flex items-start gap-1.5">
+                    <MapPin className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+                    <span className="break-words">{address}</span>
+                  </div>
+                )}
+                {openingHours && (
+                  <div className="flex items-center gap-1.5">
+                    <Clock className="h-4 w-4 text-primary flex-shrink-0" />
+                    <span>{openingHours}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* WhatsApp Button */}
+            {whatsapp && (
+              <div className="sm:self-start">
+                <Button
+                  onClick={handleWhatsApp}
+                  className="w-full sm:w-auto gap-2 bg-green-600 hover:bg-green-700 text-white shadow-md"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  WhatsApp
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </header>
