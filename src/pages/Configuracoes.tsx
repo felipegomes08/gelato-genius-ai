@@ -12,10 +12,12 @@ import { toast } from "sonner";
 import { CurrencyInput, getCurrencyValue } from "@/components/ui/currency-input";
 import { formatNumberToBRL } from "@/lib/formatters";
 import { StoreSettingsTab } from "@/components/settings/StoreSettingsTab";
-
 export default function Configuracoes() {
-  const { settings, updateSetting, isUpdating } = useAppSettings();
-
+  const {
+    settings,
+    updateSetting,
+    isUpdating
+  } = useAppSettings();
   const [message5, setMessage5] = useState("");
   const [message10, setMessage10] = useState("");
   const [rules, setRules] = useState<CouponRules>({
@@ -23,7 +25,7 @@ export default function Configuracoes() {
     lowValue: 5,
     highValue: 10,
     minPurchase5: 30,
-    minPurchase10: 50,
+    minPurchase10: 50
   });
 
   // String states for currency inputs
@@ -32,7 +34,6 @@ export default function Configuracoes() {
   const [highValueStr, setHighValueStr] = useState("");
   const [minPurchase5Str, setMinPurchase5Str] = useState("");
   const [minPurchase10Str, setMinPurchase10Str] = useState("");
-
   useEffect(() => {
     if (settings) {
       setMessage5(settings.couponMessage5);
@@ -45,17 +46,21 @@ export default function Configuracoes() {
       setMinPurchase10Str(formatNumberToBRL(settings.couponRules.minPurchase10));
     }
   }, [settings]);
-
   const handleSaveMessages = async () => {
     try {
-      await updateSetting({ key: "coupon_message_5", value: message5 });
-      await updateSetting({ key: "coupon_message_10", value: message10 });
+      await updateSetting({
+        key: "coupon_message_5",
+        value: message5
+      });
+      await updateSetting({
+        key: "coupon_message_10",
+        value: message10
+      });
       toast.success("Mensagens salvas com sucesso!");
     } catch (error) {
       toast.error("Erro ao salvar mensagens");
     }
   };
-
   const handleSaveRules = async () => {
     try {
       const updatedRules: CouponRules = {
@@ -63,27 +68,32 @@ export default function Configuracoes() {
         lowValue: getCurrencyValue(lowValueStr),
         highValue: getCurrencyValue(highValueStr),
         minPurchase5: getCurrencyValue(minPurchase5Str),
-        minPurchase10: getCurrencyValue(minPurchase10Str),
+        minPurchase10: getCurrencyValue(minPurchase10Str)
       };
-      await updateSetting({ key: "coupon_rules", value: updatedRules });
+      await updateSetting({
+        key: "coupon_rules",
+        value: updatedRules
+      });
       toast.success("Regras salvas com sucesso!");
     } catch (error) {
       toast.error("Erro ao salvar regras");
     }
   };
-
-  const placeholders = [
-    { tag: "{nome}", description: "Nome do cliente" },
-    { tag: "{valor}", description: "Valor do cupom" },
-    { tag: "{validade}", description: "Data de validade" },
-    { tag: "{minimo}", description: "Valor mínimo de compra" },
-  ];
-
-  return (
-    <div className="flex flex-col min-h-screen bg-background">
-      <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:px-6">
-        <Header title="Configurações Gerais" />
-      </header>
+  const placeholders = [{
+    tag: "{nome}",
+    description: "Nome do cliente"
+  }, {
+    tag: "{valor}",
+    description: "Valor do cupom"
+  }, {
+    tag: "{validade}",
+    description: "Data de validade"
+  }, {
+    tag: "{minimo}",
+    description: "Valor mínimo de compra"
+  }];
+  return <div className="flex flex-col min-h-screen bg-background">
+      
 
       <main className="flex-1 p-4 sm:p-6 space-y-6 pb-24">
         <Tabs defaultValue="store" className="w-full">
@@ -118,12 +128,10 @@ export default function Configuracoes() {
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-2">
-                  {placeholders.map((p) => (
-                    <Badge key={p.tag} variant="secondary" className="text-sm">
+                  {placeholders.map(p => <Badge key={p.tag} variant="secondary" className="text-sm">
                       <code className="font-mono">{p.tag}</code>
                       <span className="ml-2 text-muted-foreground">→ {p.description}</span>
-                    </Badge>
-                  ))}
+                    </Badge>)}
                 </div>
               </CardContent>
             </Card>
@@ -136,12 +144,7 @@ export default function Configuracoes() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <Textarea
-                  value={message5}
-                  onChange={(e) => setMessage5(e.target.value)}
-                  rows={12}
-                  className="font-mono text-sm"
-                />
+                <Textarea value={message5} onChange={e => setMessage5(e.target.value)} rows={12} className="font-mono text-sm" />
               </CardContent>
             </Card>
 
@@ -153,12 +156,7 @@ export default function Configuracoes() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <Textarea
-                  value={message10}
-                  onChange={(e) => setMessage10(e.target.value)}
-                  rows={12}
-                  className="font-mono text-sm"
-                />
+                <Textarea value={message10} onChange={e => setMessage10(e.target.value)} rows={12} className="font-mono text-sm" />
               </CardContent>
             </Card>
 
@@ -180,10 +178,7 @@ export default function Configuracoes() {
                 <div className="grid gap-6 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label>Limite para cupom maior</Label>
-                    <CurrencyInput
-                      value={thresholdStr}
-                      onChange={setThresholdStr}
-                    />
+                    <CurrencyInput value={thresholdStr} onChange={setThresholdStr} />
                     <p className="text-xs text-muted-foreground">
                       Vendas acima deste valor geram cupom maior
                     </p>
@@ -191,10 +186,7 @@ export default function Configuracoes() {
 
                   <div className="space-y-2">
                     <Label>Valor do cupom menor</Label>
-                    <CurrencyInput
-                      value={lowValueStr}
-                      onChange={setLowValueStr}
-                    />
+                    <CurrencyInput value={lowValueStr} onChange={setLowValueStr} />
                     <p className="text-xs text-muted-foreground">
                       Para vendas até o limite
                     </p>
@@ -202,10 +194,7 @@ export default function Configuracoes() {
 
                   <div className="space-y-2">
                     <Label>Valor do cupom maior</Label>
-                    <CurrencyInput
-                      value={highValueStr}
-                      onChange={setHighValueStr}
-                    />
+                    <CurrencyInput value={highValueStr} onChange={setHighValueStr} />
                     <p className="text-xs text-muted-foreground">
                       Para vendas acima do limite
                     </p>
@@ -213,18 +202,12 @@ export default function Configuracoes() {
 
                   <div className="space-y-2">
                     <Label>Compra mínima para cupom menor</Label>
-                    <CurrencyInput
-                      value={minPurchase5Str}
-                      onChange={setMinPurchase5Str}
-                    />
+                    <CurrencyInput value={minPurchase5Str} onChange={setMinPurchase5Str} />
                   </div>
 
                   <div className="space-y-2">
                     <Label>Compra mínima para cupom maior</Label>
-                    <CurrencyInput
-                      value={minPurchase10Str}
-                      onChange={setMinPurchase10Str}
-                    />
+                    <CurrencyInput value={minPurchase10Str} onChange={setMinPurchase10Str} />
                   </div>
                 </div>
 
@@ -245,6 +228,5 @@ export default function Configuracoes() {
           </TabsContent>
         </Tabs>
       </main>
-    </div>
-  );
+    </div>;
 }
