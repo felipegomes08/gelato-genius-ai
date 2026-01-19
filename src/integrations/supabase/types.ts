@@ -330,6 +330,7 @@ export type Database = {
           low_stock_threshold: number | null
           name: string
           price: number | null
+          sort_order: number
           updated_at: string
         }
         Insert: {
@@ -346,6 +347,7 @@ export type Database = {
           low_stock_threshold?: number | null
           name: string
           price?: number | null
+          sort_order?: number
           updated_at?: string
         }
         Update: {
@@ -362,6 +364,7 @@ export type Database = {
           low_stock_threshold?: number | null
           name?: string
           price?: number | null
+          sort_order?: number
           updated_at?: string
         }
         Relationships: [

@@ -45,7 +45,7 @@ export default function Cardapio() {
         .from("products")
         .select("id, name, description, price, image_url, category_id, category")
         .eq("is_active", true)
-        .order("name");
+        .order("sort_order");
 
       if (error) throw error;
       return data as Product[];
