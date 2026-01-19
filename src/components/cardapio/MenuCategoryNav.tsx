@@ -19,11 +19,11 @@ export function MenuCategoryNav({
 }: MenuCategoryNavProps) {
   return (
     <ScrollArea className="w-full whitespace-nowrap">
-      <div className="flex gap-2 p-1">
+      <div className="flex gap-2 py-2 px-1">
         <button
           onClick={() => onSelectCategory(null)}
           className={cn(
-            "px-4 py-2 rounded-full text-sm font-medium transition-all",
+            "px-4 py-2 rounded-full text-sm font-medium transition-all flex-shrink-0",
             "border border-border hover:border-primary/50",
             selectedCategory === null
               ? "bg-primary text-primary-foreground border-primary"
@@ -37,7 +37,7 @@ export function MenuCategoryNav({
             key={category.id}
             onClick={() => onSelectCategory(category.id)}
             className={cn(
-              "px-4 py-2 rounded-full text-sm font-medium transition-all",
+              "px-4 py-2 rounded-full text-sm font-medium transition-all flex-shrink-0",
               "border border-border hover:border-primary/50",
               selectedCategory === category.id
                 ? "bg-primary text-primary-foreground border-primary"
@@ -47,6 +47,8 @@ export function MenuCategoryNav({
             {category.name}
           </button>
         ))}
+        {/* Extra padding at end to prevent cutoff */}
+        <div className="w-2 flex-shrink-0" aria-hidden="true" />
       </div>
       <ScrollBar orientation="horizontal" />
     </ScrollArea>
